@@ -4,36 +4,39 @@
   <meta charset="UTF-8" />
   <title>SkyReels Client</title>
   <style>
-    body { font-family: sans-serif; max-width: 640px; margin: 20px auto; }
-    fieldset { margin-bottom: 16px; }
-    input, textarea, button { width: 100%; margin: 4px 0; padding: 6px; }
-    button[disabled] { opacity: 0.6; cursor: not-allowed; }
-    #result { white-space: pre-wrap; font-size: 0.9rem; }
+    body { font-family: sans-serif; max-width: 640px; margin: 20px auto; padding: 0 20px; }
+    fieldset { margin-bottom: 16px; border: 1px solid #ddd; border-radius: 4px; }
+    legend { font-weight: bold; padding: 0 8px; }
+    input, textarea, button { width: 100%; margin: 4px 0; padding: 8px; box-sizing: border-box; }
+    button { background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    button[disabled] { opacity: 0.6; cursor: not-allowed; background: #6c757d; }
+    #result { white-space: pre-wrap; font-size: 0.9rem; background: #f5f5f5; padding: 12px; border-radius: 4px; max-height: 400px; overflow-y: auto; }
+    #keyStatus { color: green; margin-top: 8px; }
+    .video-container { margin-top: 16px; }
+    .video-container video { width: 100%; border-radius: 4px; }
   </style>
 </head>
 <body>
   <h1>SkyReels Web Client</h1>
-
   <fieldset>
     <legend>Step 1: Insert API key</legend>
     <input id="apiKey" type="password" placeholder="Enter your API key" />
     <button id="saveKeyBtn">Save key</button>
     <div id="keyStatus"></div>
   </fieldset>
-
   <fieldset>
     <legend>Step 2: Generate video</legend>
     <input id="endpoint" type="text"
            value="https://api.wavespeed.ai/api/v3/wavespeed-ai/SkyReels-V1"
            placeholder="SkyReels endpoint" />
     <textarea id="prompt" rows="3" placeholder="Prompt">A woman walking through Sarajevo old town at dusk, cinematic lighting, slow motion</textarea>
-    <input id="imageUrl" type="text" placeholder="Image URL (for I2V)" />
+    <input id="imageUrl" type="text" placeholder="Image URL (for I2V - optional)" />
     <button id="generateBtn" disabled>Generate</button>
   </fieldset>
-
   <h3>Result</h3>
   <div id="result"></div>
-
+  <div id="videoContainer" class="video-container"></div>
   <script>
     const apiKeyInput = document.getElementById('apiKey');
     const saveKeyBtn = document.getElementById('saveKeyBtn');
@@ -43,28 +46,30 @@
     const promptInput = document.getElementById('prompt');
     const imageUrlInput = document.getElementById('imageUrl');
     const resultDiv = document.getElementById('result');
-
+    const videoContainer = document.getElementById('videoContainer');
     let apiKey = null;
-
+    
     saveKeyBtn.onclick = () => {
       const value = apiKeyInput.value.trim();
       if (!value) {
         keyStatus.textContent = 'Please enter a key.';
+        keyStatus.style.color = 'red';
         return;
       }
       apiKey = value;
       sessionStorage.setItem('skyreels_api_key', apiKey);
       generateBtn.disabled = false;
-      keyStatus.textContent = 'Key saved in this session.';
+      keyStatus.textContent = '✓ Key saved in this session.';
+      keyStatus.style.color = 'green';
     };
-
+    
     const storedKey = sessionStorage.getItem('skyreels_api_key');
     if (storedKey) {
       apiKey = storedKey;
       generateBtn.disabled = false;
-      keyStatus.textContent = 'Key loaded from this session.';
+      keyStatus.textContent = '✓ Key loaded from this session.';
     }
-
+    
     generateBtn.onclick = async () => {
       if (!apiKey) {
         alert('Insert API key first.');
@@ -73,30 +78,50 @@
       const endpoint = endpointInput.value.trim();
       const prompt = promptInput.value.trim();
       const image = imageUrlInput.value.trim();
-
+      
       if (!endpoint || !prompt) {
         alert('Endpoint and prompt are required.');
         return;
       }
-
+      
       resultDiv.textContent = 'Submitting job...';
-
+      videoContainer.innerHTML = '';
+      generateBtn.disabled = true;
+      
       try {
+        const body = { prompt };
+        if (image) {
+          body.image = image;
+        }
+        
         const res = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
+            'x-api-key': apiKey  // FIXED: Changed from Authorization Bearer to x-api-key
           },
-          body: JSON.stringify({
-            prompt,
-            image
-          })
+          body: JSON.stringify(body)
         });
+        
         const data = await res.json();
         resultDiv.textContent = JSON.stringify(data, null, 2);
+        
+        // If video URL is returned, display it
+        if (data.video_url || data.videoUrl || data.url) {
+          const videoUrl = data.video_url || data.videoUrl || data.url;
+          videoContainer.innerHTML = `
+            <h3>Generated Video</h3>
+            <video controls autoplay loop>
+              <source src="${videoUrl}" type="video/mp4">
+              Your browser does not support video playback.
+            </video>
+          `;
+        }
+        
       } catch (err) {
         resultDiv.textContent = 'Error: ' + err.message;
+      } finally {
+        generateBtn.disabled = false;
       }
     };
   </script>
