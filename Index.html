@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SkyReels Client</title>
+  <style>
+    body { font-family: sans-serif; max-width: 640px; margin: 20px auto; }
+    fieldset { margin-bottom: 16px; }
+    input, textarea, button { width: 100%; margin: 4px 0; padding: 6px; }
+    button[disabled] { opacity: 0.6; cursor: not-allowed; }
+    #result { white-space: pre-wrap; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>SkyReels Web Client</h1>
+
+  <fieldset>
+    <legend>Step 1: Insert API key</legend>
+    <input id="apiKey" type="password" placeholder="Enter your API key" />
+    <button id="saveKeyBtn">Save key</button>
+    <div id="keyStatus"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Step 2: Generate video</legend>
+    <input id="endpoint" type="text"
+           value="https://api.wavespeed.ai/api/v3/wavespeed-ai/SkyReels-V1"
+           placeholder="SkyReels endpoint" />
+    <textarea id="prompt" rows="3" placeholder="Prompt">A woman walking through Sarajevo old town at dusk, cinematic lighting, slow motion</textarea>
+    <input id="imageUrl" type="text" placeholder="Image URL (for I2V)" />
+    <button id="generateBtn" disabled>Generate</button>
+  </fieldset>
+
+  <h3>Result</h3>
+  <div id="result"></div>
+
+  <script>
+    const apiKeyInput = document.getElementById('apiKey');
+    const saveKeyBtn = document.getElementById('saveKeyBtn');
+    const keyStatus = document.getElementById('keyStatus');
+    const generateBtn = document.getElementById('generateBtn');
+    const endpointInput = document.getElementById('endpoint');
+    const promptInput = document.getElementById('prompt');
+    const imageUrlInput = document.getElementById('imageUrl');
+    const resultDiv = document.getElementById('result');
+
+    let apiKey = null;
+
+    saveKeyBtn.onclick = () => {
+      const value = apiKeyInput.value.trim();
+      if (!value) {
+        keyStatus.textContent = 'Please enter a key.';
+        return;
+      }
+      apiKey = value;
+      sessionStorage.setItem('skyreels_api_key', apiKey);
+      generateBtn.disabled = false;
+      keyStatus.textContent = 'Key saved in this session.';
+    };
+
+    const storedKey = sessionStorage.getItem('skyreels_api_key');
+    if (storedKey) {
+      apiKey = storedKey;
+      generateBtn.disabled = false;
+      keyStatus.textContent = 'Key loaded from this session.';
+    }
+
+    generateBtn.onclick = async () => {
+      if (!apiKey) {
+        alert('Insert API key first.');
+        return;
+      }
+      const endpoint = endpointInput.value.trim();
+      const prompt = promptInput.value.trim();
+      const image = imageUrlInput.value.trim();
+
+      if (!endpoint || !prompt) {
+        alert('Endpoint and prompt are required.');
+        return;
+      }
+
+      resultDiv.textContent = 'Submitting job...';
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            prompt,
+            image
+          })
+        });
+        const data = await res.json();
+        resultDiv.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        resultDiv.textContent = 'Error: ' + err.message;
+      }
+    };
+  </script>
+</body>
+</html>
