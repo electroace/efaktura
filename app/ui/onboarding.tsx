@@ -7,11 +7,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 export type CompanyForm = {
   name: string; address: string; city: string; postalCode: string; jib: string; vatId: string;
-  vatRegistered: boolean; iban: string; bank: string; phone: string; contactEmail: string;
+  vatRegistered: boolean; iban: string; bank: string; phone: string; contactEmail: string; contactPerson: string;
 };
 
 export function Onboarding({ email, initial, settings = false, hasLogo = false }: {email: string; initial?: CompanyForm; settings?: boolean; hasLogo?: boolean}) {
-  const [form, setForm] = useState<CompanyForm>(initial ?? { name:"", address:"", city:"", postalCode:"", jib:"", vatId:"", vatRegistered:false, iban:"", bank:"", phone:"", contactEmail:email });
+  const [form, setForm] = useState<CompanyForm>(initial ?? { name:"", address:"", city:"", postalCode:"", jib:"", vatId:"", vatRegistered:false, iban:"", bank:"", phone:"", contactEmail:email, contactPerson:"" });
   const [saved, setSaved] = useState(!!initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -44,6 +44,7 @@ export function Onboarding({ email, initial, settings = false, hasLogo = false }
         <label>Banka <Input value={form.bank} onChange={e=>set("bank",e.target.value)} /></label>
         <label>Telefon <Input value={form.phone} onChange={e=>set("phone",e.target.value)} /></label>
         <label>Email na dokumentu <Input type="email" value={form.contactEmail} onChange={e=>set("contactEmail",e.target.value)} /></label>
+        <label className="full">Kontakt osoba firme <Input value={form.contactPerson} onChange={e=>set("contactPerson",e.target.value)} placeholder="Ime i prezime (opcionalno)" /></label>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
       {success && <p className="form-success" role="status">{success}</p>}
