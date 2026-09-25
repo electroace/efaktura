@@ -26,13 +26,23 @@ export function AuthForm({ config, next, googleEnabled, appleEnabled }: { config
         const { data, error } = await client().auth.signUp({ email, password, options: { emailRedirectTo: callback() } });
         if (error) throw error;
         if (data.session) window.location.assign(next);
-        else setMessage("Provjerite email i potvrdite registraciju, pa unesite podatke firme.");
+        else setMessage("Zahtjev za registraciju je primljen. Provjerite email i mapu neželjene pošte.");
       } else {
         const { error } = await client().auth.signInWithPassword({ email, password });
         if (error) throw error;
         window.location.assign(next);
       }
     } catch (e) { setError(e instanceof Error ? e.message : "Pokušajte ponovo."); }
+    finally { setBusy(false); }
+  }
+
+  async function resendConfirmation() {
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const { error } = await client().auth.resend({ type: "signup", email, options: { emailRedirectTo: callback() } });
+      if (error) throw error;
+      setMessage("Ponovo smo zatražili slanje potvrde. Provjerite email i mapu neželjene pošte.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Pokušajte ponovo kasnije."); }
     finally { setBusy(false); }
   }
 
@@ -51,6 +61,7 @@ export function AuthForm({ config, next, googleEnabled, appleEnabled }: { config
       {error && <p role="alert" className="form-error">{error}</p>}{message && <p role="status" className="form-success">{message}</p>}
       <Button type="submit" disabled={busy}>{busy ? "Sačekajte..." : mode === "signup" ? "Registruj se besplatno" : mode === "reset" ? "Pošalji uputstvo" : "Prijavi se"}</Button>
     </form>
+    {mode === "signup" && email.includes("@") && <button className="text-action auth-reset" disabled={busy} onClick={() => void resendConfirmation()}>Ponovo pošalji potvrdu</button>}
     <button className="text-action auth-reset" onClick={() => setMode(mode === "reset" ? "signin" : "reset")}>{mode === "reset" ? "Nazad na prijavu" : "Zaboravljena lozinka?"}</button>
   </>;
 }
