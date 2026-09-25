@@ -12,6 +12,6 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
     <Link href="/" className="brand"><span className="brand-mark">e</span>faktura<span className="brand-dot">.</span>ba</Link>
     <p className="eyebrow">VAŠ NALOG</p><h1>Prijava ili registracija</h1>
     <p>Besplatni paket se aktivira čim unesete podatke firme.</p>
-    <AuthForm config={supabasePublicConfig()} next={next} appleEnabled={env.APPLE_SIGN_IN_ENABLED === "true"}/>
+    <AuthForm config={supabasePublicConfig()} next={next} googleEnabled={env.GOOGLE_SIGN_IN_ENABLED === "true"} appleEnabled={env.APPLE_SIGN_IN_ENABLED === "true"}/>
   </div></main>;
 }
