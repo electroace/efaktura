@@ -2,7 +2,6 @@ import { env } from "cloudflare:workers";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
-import { chatGPTSignInPath, chatGPTSignOutPath, getChatGPTUser } from "@/app/chatgpt-auth";
 
 export type AppUser = { userId: string; email: string; displayName: string };
 
@@ -15,7 +14,7 @@ export function supabasePublicConfig() {
 }
 
 export async function getAppUser(): Promise<AppUser | null> {
-  if (!supabaseConfigured()) return getChatGPTUser();
+  if (!supabaseConfigured()) return null;
   const cookieStore = await cookies();
   const client = createServerClient(env.SUPABASE_URL!, env.SUPABASE_PUBLISHABLE_KEY!, {
     cookies: {
@@ -44,9 +43,9 @@ export function safeReturnPath(path: string | null) {
 }
 
 export function signInPath(returnTo: string) {
-  return supabaseConfigured() ? `/prijava?next=${encodeURIComponent(safeReturnPath(returnTo))}` : chatGPTSignInPath(returnTo);
+  return `/prijava?next=${encodeURIComponent(safeReturnPath(returnTo))}`;
 }
 
 export function signOutPath() {
-  return supabaseConfigured() ? "/auth/signout" : chatGPTSignOutPath("/");
+  return "/auth/signout";
 }
