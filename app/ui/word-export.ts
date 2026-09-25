@@ -1,8 +1,8 @@
 import { Document, Paragraph, TextRun, Table, TableRow, TableCell, HeadingLevel, AlignmentType, Packer, ImageRun, WidthType } from "docx";
 
-type Item = {name:string;quantity:number;unit:string;price:number;vat:number};
-type Issuer = {name:string;address:string;city:string;postalCode:string;jib:string;vatId:string;vatRegistered:boolean;iban:string;bank:string;phone:string;email:string;logoKey:string|null};
-type DocData = {id?:string;type:string;title:string;number:string;issueDate:string;dueDate:string;clientName:string;clientAddress:string;clientId:string;currency:string;items:Item[];notes:string};
+type Item = {name:string;description?:string;sku?:string;quantity:number;unit:string;price:number;vat:number};
+type Issuer = {name:string;address:string;city:string;postalCode:string;jib:string;vatId:string;vatRegistered:boolean;iban:string;bank:string;phone:string;email:string;contactPerson?:string;logoKey:string|null};
+type DocData = {id?:string;type:string;title:string;number:string;issueDate:string;dueDate:string;clientName:string;clientAddress:string;clientId:string;clientContact:string;showClientContact:boolean;showIssuerContact:boolean;fiscalNumber:string;currency:string;items:Item[];notes:string};
 const money = (n:number,currency:string) => new Intl.NumberFormat("bs-BA",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+" "+currency;
 const cell=(value:string,bold=false)=>new TableCell({children:[new Paragraph({children:[new TextRun({text:value,bold})]})]});
 
@@ -34,17 +34,20 @@ export async function downloadWord(doc:DocData,issuer:Issuer) {
   children.push(new Paragraph({text:`${issuer.address}, ${issuer.postalCode} ${issuer.city}`}));
   children.push(new Paragraph({text:`JIB: ${issuer.jib}${issuer.vatId?` · PDV: ${issuer.vatId}`:""}`}));
   children.push(new Paragraph({text:`${issuer.phone}  ${issuer.email}`,spacing:{after:450}}));
+  if(doc.showIssuerContact&&issuer.contactPerson) children.push(new Paragraph({text:`Kontakt osoba: ${issuer.contactPerson}`}));
   children.push(new Paragraph({text:doc.title,heading:HeadingLevel.HEADING_1,alignment:AlignmentType.RIGHT}));
   children.push(new Paragraph({text:doc.number,alignment:AlignmentType.RIGHT,spacing:{after:350}}));
   children.push(new Paragraph({children:[new TextRun({text:"Kupac: ",bold:true}),new TextRun(doc.clientName)]}));
   if(doc.clientAddress)children.push(new Paragraph({text:doc.clientAddress}));
   if(doc.clientId)children.push(new Paragraph({text:`JIB kupca: ${doc.clientId}`}));
+  if(doc.showClientContact&&doc.clientContact)children.push(new Paragraph({text:`Kontakt osoba kupca: ${doc.clientContact}`}));
   children.push(new Paragraph({text:`Datum izdavanja: ${doc.issueDate.split("-").reverse().join(".")}`}));
+  if(doc.fiscalNumber)children.push(new Paragraph({text:`BF: ${doc.fiscalNumber}`}));
   if(doc.dueDate)children.push(new Paragraph({text:`${doc.type==="offer"?"Ponuda važi do":"Rok plaćanja"}: ${doc.dueDate.split("-").reverse().join(".")}`,spacing:{after:350}}));
   else children.push(new Paragraph({text:"",spacing:{after:250}}));
   const headers=["Opis","Kol.","Cijena",...(issuer.vatRegistered?["PDV"]:[]),"Iznos"];
   const rows=[new TableRow({children:headers.map(h=>cell(h,true))}),...doc.items.map(i=>new TableRow({children:[
-    cell(`${i.name} (${i.unit})`),cell(String(i.quantity)),cell(money(i.price,doc.currency)),
+    cell(`${i.name}${i.sku?` · Šifra: ${i.sku}`:""}${i.description?`\n${i.description}`:""} (${i.unit})`),cell(String(i.quantity)),cell(money(i.price,doc.currency)),
     ...(issuer.vatRegistered?[cell(`${i.vat}%`)]:[]),
     cell(money(Math.round(i.quantity*i.price*100)/100,doc.currency)),
   ]}))];
