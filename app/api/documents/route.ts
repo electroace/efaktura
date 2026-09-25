@@ -69,6 +69,8 @@ export async function POST(request: Request) {
       jib: company.jib, vatId: company.vat_id, vatRegistered: !!company.vat_registered,
       iban: company.iban, bank: company.bank, phone: company.phone, email: company.contact_email,
       logoKey: company.logo_key, contactPerson: company.contact_person,
+      responsiblePerson: company.responsible_person,
+      electronicNotice: !!company.electronic_notice, signatureLine: !!company.show_signature_line,
     };
     const result = await db().prepare(`INSERT INTO documents
       (id,user_id,type,title,number,issue_date,due_date,client_name,client_address,client_id,client_contact,
