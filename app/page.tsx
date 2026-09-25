@@ -8,23 +8,34 @@ import { Plus, ShieldCheck } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({searchParams}:{searchParams:Promise<{q?:string;type?:string;page?:string}>}) {
+  const params=await searchParams;
+  const query=typeof params.q==="string"?params.q.trim().slice(0,100):"";
+  const type=["invoice","offer","custom"].includes(params.type??"")?params.type!:"";
+  const page=Math.max(1,Math.min(1000,Number.parseInt(params.page??"1",10)||1));
   const user = await getAppUser();
   if (!user) return <PublicLanding />;
 
   let company;
   let rows: Pick<DocumentRecord, "id"|"type"|"title"|"number"|"issue_date"|"client_name"|"created_at">[] = [];
   let used = 0;
+  let total = 0;
   let unavailable = false;
   try {
     company = await companyFor(user.userId);
     if (company?.status === "approved") {
+      const where = `user_id=?${type?" AND type=?":""}${query?" AND (instr(lower(number),lower(?))>0 OR instr(lower(title),lower(?))>0 OR instr(lower(client_name),lower(?))>0 OR instr(lower(fiscal_number),lower(?))>0)":""}`;
+      const values:(string|number)[]=[user.userId];
+      if(type) values.push(type);
+      if(query) values.push(query,query,query,query);
       const results = await Promise.all([
-        db().prepare("SELECT id,type,title,number,issue_date,client_name,created_at FROM documents WHERE user_id=? ORDER BY created_at DESC LIMIT 200").bind(user.userId).all(),
+        db().prepare(`SELECT id,type,title,number,issue_date,client_name,created_at FROM documents WHERE ${where} ORDER BY created_at DESC LIMIT 50 OFFSET ?`).bind(...values,(page-1)*50).all(),
         db().prepare("SELECT COUNT(*) AS count FROM documents WHERE user_id=? AND month=? AND type='invoice'").bind(user.userId, currentMonth()).first<{count:number}>(),
+        db().prepare(`SELECT COUNT(*) AS count FROM documents WHERE ${where}`).bind(...values).first<{count:number}>(),
       ]);
       rows = results[0].results as typeof rows;
       used = results[1]?.count ?? 0;
+      total = results[2]?.count ?? 0;
     }
   } catch (error) {
     console.error("Dashboard unavailable", error);
@@ -51,7 +62,7 @@ export default async function Home() {
           <div className="overview-card"><span>Paket</span><strong>{paidActive(company) ? `${company.price_bam} KM` : "0 KM"}</strong><span>{paidActive(company) ? "mjesečno, s PDV-om" : "do 5 stavki po fakturi"}</span></div>
           <div className="overview-card accent-card"><span>Brz početak</span><strong>Faktura ili ponuda?</strong><span>Izaberite vrstu i dodajte stavke.</span><a href="/novi">Kreiraj dokument <span aria-hidden>→</span></a></div>
         </section>
-        <DocumentList documents={rows}/>
+        <DocumentList documents={rows} query={query} type={type} page={page} total={total}/>
         <p className="plan-footnote">{paidActive(company) ? "Za produženje pretplate" : "Za više od 3 fakture mjesečno ili više od 5 stavki po fakturi"}, <a href="/pretplata">zatražite plaćeni paket i preuzmite predračun</a>. Cijena za vašu firmu je {company.price_bam.toLocaleString("bs-BA",{minimumFractionDigits:2,maximumFractionDigits:2})} KM mjesečno s PDV-om.</p>
       </>}
     </main>
