@@ -1,0 +1,47 @@
+import { sqliteTable, text, integer, uniqueIndex, index } from "drizzle-orm/sqlite-core";
+
+export const companies = sqliteTable("companies", {
+  userId: text("user_id").primaryKey(),
+  email: text("email").notNull(),
+  name: text("name").notNull(),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  postalCode: text("postal_code").notNull().default(""),
+  jib: text("jib").notNull(),
+  vatId: text("vat_id").notNull().default(""),
+  vatRegistered: integer("vat_registered", { mode: "boolean" }).notNull().default(false),
+  iban: text("iban").notNull().default(""),
+  bank: text("bank").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  contactEmail: text("contact_email").notNull().default(""),
+  logoKey: text("logo_key"),
+  status: text("status").notNull().default("approved"),
+  plan: text("plan").notNull().default("free"),
+  priceBam: integer("price_bam").notNull().default(22),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (t) => [index("idx_companies_status").on(t.status)]);
+
+export const documents = sqliteTable("documents", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  number: text("number").notNull(),
+  issueDate: text("issue_date").notNull(),
+  dueDate: text("due_date").notNull().default(""),
+  clientName: text("client_name").notNull(),
+  clientAddress: text("client_address").notNull().default(""),
+  clientId: text("client_id").notNull().default(""),
+  currency: text("currency").notNull().default("KM"),
+  itemsJson: text("items_json").notNull(),
+  issuerJson: text("issuer_json").notNull(),
+  notes: text("notes").notNull().default(""),
+  month: text("month").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (t) => [
+  uniqueIndex("idx_documents_owner_number").on(t.userId, t.number),
+  index("idx_documents_owner_date").on(t.userId, t.createdAt),
+  index("idx_documents_owner_month").on(t.userId, t.month),
+]);
