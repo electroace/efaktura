@@ -8,10 +8,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 export type CompanyForm = {
   name: string; address: string; city: string; postalCode: string; jib: string; vatId: string;
   vatRegistered: boolean; iban: string; bank: string; phone: string; contactEmail: string; contactPerson: string;
+  defaultNote: string; responsiblePerson: string; electronicNotice: boolean; showSignatureLine: boolean;
 };
 
 export function Onboarding({ email, initial, settings = false, hasLogo = false }: {email: string; initial?: CompanyForm; settings?: boolean; hasLogo?: boolean}) {
-  const [form, setForm] = useState<CompanyForm>(initial ?? { name:"", address:"", city:"", postalCode:"", jib:"", vatId:"", vatRegistered:false, iban:"", bank:"", phone:"", contactEmail:email, contactPerson:"" });
+  const [form, setForm] = useState<CompanyForm>(initial ?? { name:"", address:"", city:"", postalCode:"", jib:"", vatId:"", vatRegistered:false, iban:"", bank:"", phone:"", contactEmail:email, contactPerson:"", defaultNote:"", responsiblePerson:"", electronicNotice:true, showSignatureLine:false });
   const [saved, setSaved] = useState(!!initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -29,7 +30,7 @@ export function Onboarding({ email, initial, settings = false, hasLogo = false }
     finally {setBusy(false);}
   };
   return <section className="setup-layout">
-    <div className="setup-intro"><p className="eyebrow">{settings ? "POSTAVKE" : "PRVI KORAK"}</p><h1>{settings ? "Podaci firme" : "Predstavite svoju firmu."}</h1><p>{settings ? "Ovi podaci se koriste na novim dokumentima. Već kreirani dokumenti čuvaju podatke iz trenutka kreiranja." : "Unesite osnovne podatke i odmah počnite koristiti besplatni paket."}</p><div className="setup-tip"><strong>Šta pripremiti?</strong><span>Naziv, adresu, JIB i, ako ga imate, PDV broj i podatke za uplatu.</span></div></div>
+    <div className="setup-intro"><p className="eyebrow">{settings ? "POSTAVKE" : "PRVI KORAK"}</p><h1>{settings ? "Postavke" : "Predstavite svoju firmu."}</h1><p>{settings ? "Podesite podatke firme, logo i izgled novih dokumenata. Sačuvani dokumenti zadržavaju svoje postojeće podatke." : "Unesite osnovne podatke i odmah počnite koristiti besplatni paket."}</p><div className="setup-tip"><strong>Šta pripremiti?</strong><span>Naziv, adresu, JIB i, ako ga imate, PDV broj i podatke za uplatu.</span></div></div>
     <div className="panel company-form"><form onSubmit={submit}>
       <h2>Podaci o firmi</h2>
       <div className="form-grid">
@@ -46,9 +47,15 @@ export function Onboarding({ email, initial, settings = false, hasLogo = false }
         <label>Email na dokumentu <Input type="email" value={form.contactEmail} onChange={e=>set("contactEmail",e.target.value)} /></label>
         <label className="full">Kontakt osoba firme <Input value={form.contactPerson} onChange={e=>set("contactPerson",e.target.value)} placeholder="Ime i prezime (opcionalno)" /></label>
       </div>
+      <div className="settings-document"><h2>Izgled novih dokumenata</h2>
+        <label>Zadana napomena <textarea className="notes-input" rows={3} maxLength={1600} value={form.defaultNote} onChange={e=>set("defaultNote",e.target.value)} placeholder="Npr. uslovi isporuke ili plaćanja"/><small>Predlaže se u svakom novom dokumentu; možete je promijeniti na pojedinačnoj fakturi.</small></label>
+        <label>Odgovorno lice <Input value={form.responsiblePerson} onChange={e=>set("responsiblePerson",e.target.value)} placeholder="Ime i prezime odgovornog lica"/></label>
+        <label className="settings-check"><Checkbox checked={form.electronicNotice} onCheckedChange={checked=>setForm(prev=>({...prev,electronicNotice:checked===true,showSignatureLine:checked===true?false:prev.showSignatureLine}))}/><span>Na dnu prikaži: „Dokument je elektronski izdat i važi bez pečata i potpisa.“</span></label>
+        <label className="settings-check"><Checkbox checked={form.showSignatureLine} onCheckedChange={checked=>setForm(prev=>({...prev,showSignatureLine:checked===true,electronicNotice:checked===true?false:prev.electronicNotice}))}/><span>Prikaži liniju za pečat i potpis iznad odgovornog lica</span></label>
+      </div>
       {error && <p className="form-error" role="alert">{error}</p>}
       {success && <p className="form-success" role="status">{success}</p>}
-      <Button className="submit-button" disabled={busy} type="submit">{busy ? "Čuvanje..." : settings ? "Sačuvaj izmjene" : "Otvori besplatni nalog"}</Button>
+      <Button className="submit-button" disabled={busy} type="submit">{busy ? "Čuvanje..." : settings ? "Sačuvaj izmjene" : "Sačuvaj i nastavi"}</Button>
     </form>
     {saved ? <><LogoUpload initialHasLogo={hasLogo}/><div className="onboarding-next"><a href="/novi" className="primary-button">Kreiraj prvi dokument →</a><a href="/" className="secondary-button">Pregled dokumenata</a></div></>
       : <p className="logo-upload-hint">Nakon što sačuvate firmu, ovdje ćete moći dodati njen logo.</p>}
