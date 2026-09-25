@@ -9,6 +9,8 @@ export function AppHeader({ user, hasCompany = false, paid = false }: { user: Ap
     <nav className="account-links" aria-label="Glavna navigacija">
       {hasCompany && <a href="/" className="nav-link">Dokumenti</a>}
       {hasCompany && <a href="/novi" className="nav-link">Novi dokument</a>}
+      {hasCompany && <a href="/kupci" className="nav-link">Kupci</a>}
+      {hasCompany && <a href="/stavke" className="nav-link">Roba i usluge</a>}
       {hasCompany && <a href="/postavke" className="nav-link">Firma i logo</a>}
       {isAdmin(user.email) && <a href="/admin" className="nav-link">Administracija</a>}
       <a href="/pretplata" className="header-upgrade">{paid ? "Produži paket" : "Neograničene fakture"}<ArrowUpRight size={15}/></a>
