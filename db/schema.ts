@@ -15,6 +15,7 @@ export const companies = sqliteTable("companies", {
   bank: text("bank").notNull().default(""),
   phone: text("phone").notNull().default(""),
   contactEmail: text("contact_email").notNull().default(""),
+  contactPerson: text("contact_person").notNull().default(""),
   logoKey: text("logo_key"),
   status: text("status").notNull().default("approved"),
   plan: text("plan").notNull().default("free"),
@@ -35,6 +36,10 @@ export const documents = sqliteTable("documents", {
   clientName: text("client_name").notNull(),
   clientAddress: text("client_address").notNull().default(""),
   clientId: text("client_id").notNull().default(""),
+  clientContact: text("client_contact").notNull().default(""),
+  showClientContact: integer("show_client_contact", { mode: "boolean" }).notNull().default(false),
+  showIssuerContact: integer("show_issuer_contact", { mode: "boolean" }).notNull().default(false),
+  fiscalNumber: text("fiscal_number").notNull().default(""),
   currency: text("currency").notNull().default("KM"),
   itemsJson: text("items_json").notNull(),
   issuerJson: text("issuer_json").notNull(),
@@ -47,6 +52,39 @@ export const documents = sqliteTable("documents", {
   index("idx_documents_owner_date").on(t.userId, t.createdAt),
   index("idx_documents_owner_month").on(t.userId, t.month),
 ]);
+
+export const customers = sqliteTable("customers", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  address: text("address").notNull().default(""),
+  city: text("city").notNull().default(""),
+  postalCode: text("postal_code").notNull().default(""),
+  jib: text("jib").notNull().default(""),
+  vatId: text("vat_id").notNull().default(""),
+  email: text("email").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  contactPerson: text("contact_person").notNull().default(""),
+  contactEmail: text("contact_email").notNull().default(""),
+  contactPhone: text("contact_phone").notNull().default(""),
+  notes: text("notes").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (t) => [index("idx_customers_user_name").on(t.userId, t.name)]);
+
+export const catalogItems = sqliteTable("catalog_items", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  kind: text("kind").notNull().default("service"),
+  name: text("name").notNull(),
+  description: text("description").notNull().default(""),
+  sku: text("sku").notNull().default(""),
+  unit: text("unit").notNull().default("kom"),
+  price: real("price").notNull().default(0),
+  vat: real("vat").notNull().default(17),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (t) => [index("idx_catalog_user_name").on(t.userId, t.name)]);
 
 export const billingSettings = sqliteTable("billing_settings", {
   id: integer("id").primaryKey(),
