@@ -6,6 +6,7 @@ declare namespace Cloudflare {
     MAIL_FROM?: string;
     SUPABASE_URL?: string;
     SUPABASE_PUBLISHABLE_KEY?: string;
+    GOOGLE_SIGN_IN_ENABLED?: string;
     APPLE_SIGN_IN_ENABLED?: string;
   }
 }
