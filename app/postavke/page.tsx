@@ -13,5 +13,7 @@ export default async function SettingsPage() {
       name:company.name,address:company.address,city:company.city,postalCode:company.postal_code,jib:company.jib,
       vatId:company.vat_id,vatRegistered:!!company.vat_registered,iban:company.iban,bank:company.bank,
       phone:company.phone,contactEmail:company.contact_email,contactPerson:company.contact_person,
+      defaultNote:company.default_note,responsiblePerson:company.responsible_person,
+      electronicNotice:!!company.electronic_notice,showSignatureLine:!!company.show_signature_line,
     } : undefined} hasLogo={!!company?.logo_key}/></main></div>;
 }
