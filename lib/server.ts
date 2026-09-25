@@ -4,16 +4,28 @@ import { getAppUser } from "@/lib/app-auth";
 export type Company = {
   user_id: string; email: string; name: string; address: string; city: string; postal_code: string;
   jib: string; vat_id: string; vat_registered: number; iban: string; bank: string;
-  phone: string; contact_email: string; logo_key: string | null; status: string;
+  phone: string; contact_email: string; contact_person: string; logo_key: string | null; status: string;
   plan: string; price_bam: number; paid_until: string | null; created_at: string; updated_at: string;
 };
 
 export type DocumentRecord = {
   id: string; user_id: string; type: string; title: string; number: string;
   issue_date: string; due_date: string; client_name: string; client_address: string;
-  client_id: string; currency: string; items_json: string; notes: string;
+  client_id: string; client_contact: string; show_client_contact: number; show_issuer_contact: number;
+  fiscal_number: string; currency: string; items_json: string; notes: string;
   issuer_json: string;
   month: string; created_at: string; updated_at: string;
+};
+
+export type Customer = {
+  id: string; user_id: string; name: string; address: string; city: string; postal_code: string;
+  jib: string; vat_id: string; email: string; phone: string; contact_person: string;
+  contact_email: string; contact_phone: string; notes: string; created_at: string; updated_at: string;
+};
+
+export type CatalogItem = {
+  id: string; user_id: string; kind: "goods" | "service"; name: string; description: string;
+  sku: string; unit: string; price: number; vat: number; created_at: string; updated_at: string;
 };
 
 export function db(): D1Database {
