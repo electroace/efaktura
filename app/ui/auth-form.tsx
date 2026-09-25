@@ -5,10 +5,10 @@ import { createBrowserClient } from "@supabase/ssr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function AuthForm({ config, next, googleEnabled, appleEnabled }: { config: { url: string; key: string }; next: string; googleEnabled: boolean; appleEnabled: boolean }) {
+export function AuthForm({ config, next, initialMode = "signin", googleEnabled, appleEnabled }: { config: { url: string; key: string }; next: string; initialMode?: "signin" | "signup"; googleEnabled: boolean; appleEnabled: boolean }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "reset">(initialMode);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
