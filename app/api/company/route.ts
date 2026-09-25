@@ -17,15 +17,21 @@ export async function POST(request: Request) {
       name, address, city, clean(data.postalCode, 20), jib, clean(data.vatId, 32),
       data.vatRegistered === true ? 1 : 0, clean(data.iban, 60), clean(data.bank, 120),
       clean(data.phone, 40), clean(data.contactEmail, 120) || user.email,
-      clean(data.contactPerson, 120), now, user.id
+      clean(data.contactPerson, 120), clean(data.defaultNote, 1600),
+      clean(data.responsiblePerson, 120),
+      data.showSignatureLine === true ? 0 : data.electronicNotice === false ? 0 : 1,
+      data.showSignatureLine === true ? 1 : 0,
+      now, user.id
     ];
     if (existing) {
       await db().prepare(`UPDATE companies SET name=?, address=?, city=?, postal_code=?, jib=?, vat_id=?,
-        vat_registered=?, iban=?, bank=?, phone=?, contact_email=?, contact_person=?, updated_at=? WHERE user_id=?`).bind(...values).run();
+        vat_registered=?, iban=?, bank=?, phone=?, contact_email=?, contact_person=?, default_note=?,
+        responsible_person=?, electronic_notice=?, show_signature_line=?, updated_at=? WHERE user_id=?`).bind(...values).run();
     } else {
       await db().prepare(`INSERT INTO companies
-        (name,address,city,postal_code,jib,vat_id,vat_registered,iban,bank,phone,contact_email,contact_person,updated_at,user_id,email,created_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(...values, user.email, now).run();
+        (name,address,city,postal_code,jib,vat_id,vat_registered,iban,bank,phone,contact_email,contact_person,
+         default_note,responsible_person,electronic_notice,show_signature_line,updated_at,user_id,email,created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(...values, user.email, now).run();
     }
     return Response.json({ ok: true, status: existing?.status ?? "approved" });
   } catch (e) {
