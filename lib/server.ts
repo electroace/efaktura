@@ -4,7 +4,9 @@ import { getAppUser } from "@/lib/app-auth";
 export type Company = {
   user_id: string; email: string; name: string; address: string; city: string; postal_code: string;
   jib: string; vat_id: string; vat_registered: number; iban: string; bank: string;
-  phone: string; contact_email: string; contact_person: string; logo_key: string | null; status: string;
+  phone: string; contact_email: string; contact_person: string; default_note: string;
+  responsible_person: string; electronic_notice: number; show_signature_line: number;
+  logo_key: string | null; status: string;
   plan: string; price_bam: number; paid_until: string | null; created_at: string; updated_at: string;
 };
 
