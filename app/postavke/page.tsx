@@ -12,6 +12,6 @@ export default async function SettingsPage() {
     <main className="app-main"><Onboarding email={user.email} settings initial={company ? {
       name:company.name,address:company.address,city:company.city,postalCode:company.postal_code,jib:company.jib,
       vatId:company.vat_id,vatRegistered:!!company.vat_registered,iban:company.iban,bank:company.bank,
-      phone:company.phone,contactEmail:company.contact_email,
+      phone:company.phone,contactEmail:company.contact_email,contactPerson:company.contact_person,
     } : undefined} hasLogo={!!company?.logo_key}/></main></div>;
 }
