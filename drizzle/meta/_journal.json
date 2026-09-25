@@ -29,6 +29,13 @@
       "when": 1790356172682,
       "tag": "0003_careful_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790358534925,
+      "tag": "0004_purple_tempest",
+      "breakpoints": true
     }
   ]
 }
