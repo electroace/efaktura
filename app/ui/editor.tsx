@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Plus, Trash2, Printer, Download, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +15,6 @@ const money = (n:number,currency:string) => new Intl.NumberFormat("bs-BA",{minim
 const date = (v:string) => v ? v.split("-").reverse().join(".") : "—";
 
 export function Editor({isFree,used,vatRegistered,company,initial}:{isFree:boolean;used:number;vatRegistered:boolean;company:Company;initial?:Doc}) {
-  const router = useRouter();
   const [doc,setDoc] = useState<Doc>(initial ?? {type:"invoice",title:"Faktura",number:"",issueDate:today(),dueDate:"",clientName:"",clientAddress:"",clientId:"",currency:"KM",items:[{name:"",quantity:1,unit:"kom",price:0,vat:vatRegistered?17:0}],notes:""});
   const [busy,setBusy] = useState(false);
   const [dirty,setDirty] = useState(false);
@@ -41,8 +38,7 @@ export function Editor({isFree,used,vatRegistered,company,initial}:{isFree:boole
       if(!response.ok) throw new Error(data.error ?? "Dokument nije sačuvan.");
       setDoc(prev=>({...prev,id:data.id,number:data.number}));
       setDirty(false);setNotice("Dokument je sačuvan.");
-      if (!initial?.id) router.replace(`/dokumenti/${data.id}`);
-      router.refresh();
+      if (!initial?.id) window.location.assign(`/dokumenti/${data.id}`);
     } catch(e) {setError(e instanceof Error?e.message:"Pokušajte ponovo.");}
     finally {setBusy(false);}
   };
@@ -71,7 +67,7 @@ export function Editor({isFree,used,vatRegistered,company,initial}:{isFree:boole
   },[]);
   return <main className="editor-layout">
     <form className="editor-panel" onSubmit={save}>
-      <div className="editor-top"><div><p className="eyebrow">{initial?.id ? "UREDI DOKUMENT" : "NOVI DOKUMENT"}</p><h1>{initial?.id ? doc.title : "Kreirajte dokument"}</h1></div><Link href="/" className="muted-link">Zatvori</Link></div>
+      <div className="editor-top"><div><p className="eyebrow">{initial?.id ? "UREDI DOKUMENT" : "NOVI DOKUMENT"}</p><h1>{initial?.id ? doc.title : "Kreirajte dokument"}</h1></div><a href="/" className="muted-link">Zatvori</a></div>
       {isFree && <p className="limit-note">{initial?.id ? "Besplatni paket: do 5 stavki po fakturi." : `Besplatni paket: ${used}/3 fakture ovog mjeseca, do 5 stavki po fakturi. Ponude i drugi dokumenti nemaju mjesečno ograničenje.`}</p>}
       <div className="section-heading"><span>01</span><h2>Osnovni podaci</h2></div>
       <div className="form-grid">
