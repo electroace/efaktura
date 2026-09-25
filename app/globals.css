@@ -228,3 +228,16 @@ h1,h2,h3,p {margin-top:0}
 .auth-tabs button { border: 0; border-bottom: 2px solid transparent; background: transparent; padding: .65rem 0; cursor: pointer; }
 .auth-tabs .selected { border-color: currentColor; font-weight: 700; }
 .auth-reset { margin-top: 1rem; text-decoration: underline; }
+.subscription-layout { display: grid; gap: 1.5rem; }
+.subscription-card, .subscription-history, .billing-admin, .admin-requests { padding: 1.5rem; margin-bottom: 1.5rem; }
+.subscription-card h2 { font-size: 2rem; margin: .5rem 0; }
+.subscription-card h2 small { font-size: 1rem; font-weight: 400; }
+.subscription-card p { max-width: 65ch; }
+.subscription-row, .request-row { display: flex; align-items: center; justify-content: space-between; gap: 1.2rem; padding: 1rem 0; border-top: 1px solid #d9e2e8; }
+.subscription-row > div, .request-row > div:first-child { display: grid; gap: .35rem; }
+.subscription-row span, .request-row span { color: #506675; }
+.request-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.request-count { display: inline-block; margin-left: .5rem; padding: .2rem .55rem; border-radius: 1rem; background: #e5f2ed; color: #176252; font-size: .85rem; }
+.billing-admin .form-grid { margin-top: 1rem; }
+.admin-plan-state { min-width: 10rem; }
+@media (max-width: 760px) { .subscription-row, .request-row { align-items: flex-start; flex-direction: column; } }

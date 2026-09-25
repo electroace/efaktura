@@ -72,10 +72,10 @@ export function Editor({isFree,used,vatRegistered,company,initial}:{isFree:boole
   return <main className="editor-layout">
     <form className="editor-panel" onSubmit={save}>
       <div className="editor-top"><div><p className="eyebrow">{initial?.id ? "UREDI DOKUMENT" : "NOVI DOKUMENT"}</p><h1>{initial?.id ? doc.title : "Kreirajte dokument"}</h1></div><Link href="/" className="muted-link">Zatvori</Link></div>
-      {isFree && <p className="limit-note">{initial?.id ? "Besplatni paket: do 5 stavki po dokumentu." : `Besplatni paket: ${used}/3 dokumenta ovog mjeseca, do 5 stavki po dokumentu.`}</p>}
+      {isFree && <p className="limit-note">{initial?.id ? "Besplatni paket: do 5 stavki po fakturi." : `Besplatni paket: ${used}/3 fakture ovog mjeseca, do 5 stavki po fakturi. Ponude i drugi dokumenti nemaju mjesečno ograničenje.`}</p>}
       <div className="section-heading"><span>01</span><h2>Osnovni podaci</h2></div>
       <div className="form-grid">
-        <label>Vrsta dokumenta <Select value={doc.type} onValueChange={v=>{setDoc(prev=>({...prev,type:v,title:v==="invoice"?"Faktura":v==="offer"?"Ponuda":prev.type==="custom"?prev.title:""}));setDirty(true);}}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="invoice">Faktura</SelectItem><SelectItem value="offer">Ponuda</SelectItem><SelectItem value="custom">Drugi dokument</SelectItem></SelectContent></Select></label>
+        <label>Vrsta dokumenta <Select value={doc.type} disabled={!!initial?.id} onValueChange={v=>{setDoc(prev=>({...prev,type:v,title:v==="invoice"?"Faktura":v==="offer"?"Ponuda":prev.type==="custom"?prev.title:""}));setDirty(true);}}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="invoice">Faktura</SelectItem><SelectItem value="offer">Ponuda</SelectItem><SelectItem value="custom">Drugi dokument</SelectItem></SelectContent></Select></label>
         {doc.type==="custom" && <label>Naziv dokumenta <Input required value={doc.title} onChange={e=>set("title",e.target.value)} placeholder="Predračun, otpremnica..."/></label>}
         <label>Broj dokumenta <Input value={doc.number} onChange={e=>set("number",e.target.value)} placeholder="Automatski po spremanju"/></label>
         <label>Datum izdavanja <Input type="date" required value={doc.issueDate} onChange={e=>set("issueDate",e.target.value)}/></label>
@@ -96,11 +96,11 @@ export function Editor({isFree,used,vatRegistered,company,initial}:{isFree:boole
           <label>Cijena <Input type="number" min="0" step="0.01" required value={item.price} onChange={e=>setItem(index,"price",Number(e.target.value))}/></label>
           <label>PDV % <Input type="number" min="0" max="100" step="0.01" disabled={!issuer.vatRegistered} value={issuer.vatRegistered?item.vat:0} onChange={e=>setItem(index,"vat",Number(e.target.value))}/></label></div>
       </div>)}</div>
-      <Button type="button" variant="outline" disabled={doc.items.length >= (isFree?5:100)} onClick={()=>set("items",[...doc.items,{name:"",quantity:1,unit:"kom",price:0,vat:issuer.vatRegistered?17:0}])}><Plus size={16}/> Dodaj stavku</Button>
+      <Button type="button" variant="outline" disabled={doc.items.length >= (isFree && doc.type === "invoice"?5:100)} onClick={()=>set("items",[...doc.items,{name:"",quantity:1,unit:"kom",price:0,vat:issuer.vatRegistered?17:0}])}><Plus size={16}/> Dodaj stavku</Button>
       <div className="section-heading"><span>04</span><h2>Napomena</h2></div>
       <textarea className="notes-input" rows={3} value={doc.notes} onChange={e=>set("notes",e.target.value)} placeholder="Uslovi plaćanja ili dodatne informacije (opcionalno)"/>
       {error && <p className="form-error" role="alert">{error}</p>}{notice && <p className="form-success" role="status">{notice}</p>}
-      <div className="editor-actions"><Button type="submit" disabled={busy || (!initial?.id && isFree && used>=3)} className="submit-button"><Save size={17}/>{busy?"Čuvanje...":"Sačuvaj dokument"}</Button>
+      <div className="editor-actions"><Button type="submit" disabled={busy || (!initial?.id && isFree && doc.type === "invoice" && used>=3)} className="submit-button"><Save size={17}/>{busy?"Čuvanje...":"Sačuvaj dokument"}</Button>
         {canExport && <><Button type="button" variant="outline" onClick={()=>window.print()}><Printer size={17}/> PDF / štampa</Button><Button type="button" variant="outline" onClick={exportWord}><Download size={17}/> Word (.docx)</Button></>}</div>
     </form>
     <aside className="preview-column"><div className="preview-label"><span>PREGLED DOKUMENTA</span><span>A4</span></div><article className="document-paper" id="document-paper">

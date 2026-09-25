@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getAppUser, signInPath, signOutPath, supabaseConfigured } from "@/lib/app-auth";
-import { companyFor, currentMonth, db, isAdmin, type DocumentRecord } from "@/lib/server";
+import { companyFor, currentMonth, db, isAdmin, paidActive, type DocumentRecord } from "@/lib/server";
 import { Onboarding } from "./ui/onboarding";
 import { DocumentList } from "./ui/document-list";
 import { FileText, Plus, ShieldCheck } from "lucide-react";
@@ -18,7 +18,7 @@ export default async function Home() {
         <h1>Poslovni dokumenti, bez suvišnih koraka.</h1>
         <p>Prijavite se, unesite podatke firme i odmah počnite raditi u besplatnom paketu.</p>
         <a className="primary-button" href={signInPath("/")} target="_top">{supabaseConfigured() ? "Prijava ili registracija" : "Prijava putem ChatGPT naloga"} <span>↗</span></a>
-        <p className="small-note">Besplatno: 3 dokumenta mjesečno, do 5 stavki po dokumentu. Plaćeni paket: od 22 KM mjesečno, s PDV-om.</p>
+        <p className="small-note">Besplatno: 3 fakture mjesečno, do 5 stavki po fakturi. Ponude i drugi dokumenti bez mjesečnog ograničenja. Plaćeni paket: od 22 KM mjesečno, s PDV-om.</p>
       </section>
     </main>
   );
@@ -32,7 +32,7 @@ export default async function Home() {
     if (company?.status === "approved") {
       const results = await Promise.all([
         db().prepare("SELECT id,type,title,number,issue_date,client_name,created_at FROM documents WHERE user_id=? ORDER BY created_at DESC LIMIT 200").bind(user.userId).all(),
-        db().prepare("SELECT COUNT(*) AS count FROM documents WHERE user_id=? AND month=?").bind(user.userId, currentMonth()).first<{count:number}>(),
+        db().prepare("SELECT COUNT(*) AS count FROM documents WHERE user_id=? AND month=? AND type='invoice'").bind(user.userId, currentMonth()).first<{count:number}>(),
       ]);
       rows = results[0].results as typeof rows;
       used = results[1]?.count ?? 0;
@@ -62,16 +62,16 @@ export default async function Home() {
         </section>
       : <>
         <section className="dashboard-top">
-          <div><p className="eyebrow">RADNI PROSTOR</p><h1>Dokumenti</h1><p className="muted">{company.name} · {company.plan === "paid" ? "Plaćeni paket" : "Besplatni paket"}</p></div>
+          <div><p className="eyebrow">RADNI PROSTOR</p><h1>Dokumenti</h1><p className="muted">{company.name} · {paidActive(company) ? `Plaćeni paket do ${new Date(company.paid_until!).toLocaleDateString("bs-BA")}` : "Besplatni paket"}</p></div>
           <Link href="/novi" className="primary-button"><Plus size={18}/> Novi dokument</Link>
         </section>
         <section className="overview-row">
-          <div className="overview-card"><span>Ovog mjeseca</span><strong>{used} {company.plan === "free" && <small>/ 3</small>}</strong><span>{company.plan === "free" ? "iskorištenih dokumenata" : "kreiranih dokumenata"}</span></div>
-          <div className="overview-card"><span>Paket</span><strong>{company.plan === "paid" ? `${company.price_bam} KM` : "0 KM"}</strong><span>{company.plan === "paid" ? "mjesečno, s PDV-om" : "do 5 stavki po dokumentu"}</span></div>
+          <div className="overview-card"><span>Fakture ovog mjeseca</span><strong>{used} {!paidActive(company) && <small>/ 3</small>}</strong><span>{paidActive(company) ? "kreiranih faktura" : "ponude i drugi dokumenti nisu ograničeni"}</span></div>
+          <div className="overview-card"><span>Paket</span><strong>{paidActive(company) ? `${company.price_bam} KM` : "0 KM"}</strong><span>{paidActive(company) ? "mjesečno, s PDV-om" : "do 5 stavki po fakturi"}</span></div>
           <div className="overview-card accent-card"><span>Brz početak</span><strong>Faktura ili ponuda?</strong><span>Izaberite vrstu i dodajte stavke.</span><Link href="/novi">Kreiraj dokument <span aria-hidden>→</span></Link></div>
         </section>
         <DocumentList documents={rows}/>
-        {company.plan === "free" && <p className="plan-footnote">Za više od 3 dokumenta mjesečno ili više od 5 stavki po dokumentu, zatražite plaćeni paket na <a href="mailto:electroace@gmail.com?subject=eFaktura%20pla%C4%87eni%20paket">electroace@gmail.com</a>. Početna cijena je 22 KM mjesečno s PDV-om; administrator može dogovoriti drugu cijenu.</p>}
+        <p className="plan-footnote">{paidActive(company) ? "Za produženje pretplate" : "Za više od 3 fakture mjesečno ili više od 5 stavki po fakturi"}, <Link href="/pretplata">zatražite plaćeni paket i preuzmite predračun</Link>. Cijena za vašu firmu je {company.price_bam.toLocaleString("bs-BA",{minimumFractionDigits:2,maximumFractionDigits:2})} KM mjesečno s PDV-om.</p>
       </>}
     </main>
   </div>;

@@ -5,7 +5,7 @@ export type Company = {
   user_id: string; email: string; name: string; address: string; city: string; postal_code: string;
   jib: string; vat_id: string; vat_registered: number; iban: string; bank: string;
   phone: string; contact_email: string; logo_key: string | null; status: string;
-  plan: string; price_bam: number; created_at: string; updated_at: string;
+  plan: string; price_bam: number; paid_until: string | null; created_at: string; updated_at: string;
 };
 
 export type DocumentRecord = {
@@ -28,6 +28,20 @@ export async function identity() {
 
 export async function companyFor(userId: string): Promise<Company | null> {
   return db().prepare("SELECT * FROM companies WHERE user_id = ?").bind(userId).first<Company>();
+}
+
+export function paidActive(company: Company) {
+  return company.plan === "paid" && !!company.paid_until && company.paid_until > new Date().toISOString();
+}
+
+export function addCalendarMonth(value: string) {
+  const date = new Date(value);
+  const day = date.getUTCDate();
+  date.setUTCDate(1);
+  date.setUTCMonth(date.getUTCMonth() + 1);
+  const lastDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+  date.setUTCDate(Math.min(day, lastDay));
+  return date.toISOString();
 }
 
 export const isAdmin = (email: string) => email.toLowerCase() === "electroace@gmail.com";

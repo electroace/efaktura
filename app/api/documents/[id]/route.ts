@@ -1,4 +1,4 @@
-import { apiError, companyFor, db, identity, sameOrigin, type DocumentRecord } from "@/lib/server";
+import { apiError, companyFor, db, identity, paidActive, sameOrigin, type DocumentRecord } from "@/lib/server";
 import { documentInput } from "../route";
 
 export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
@@ -26,7 +26,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const old = await db().prepare("SELECT * FROM documents WHERE id=? AND user_id=?").bind(id, user.id).first<DocumentRecord>();
     if (!old) return apiError("Dokument nije pronađen.", 404);
     const issuer = JSON.parse(old.issuer_json) as {vatRegistered?:boolean};
-    const input = documentInput(await request.json(), company.plan === "free", !!issuer.vatRegistered);
+    const input = documentInput(await request.json(), !paidActive(company), !!issuer.vatRegistered);
+    if (input.type !== old.type) return apiError("Vrstu sačuvanog dokumenta nije moguće promijeniti. Kreirajte novi dokument.");
     const number = input.manualNumber || old.number;
     await db().prepare(`UPDATE documents SET type=?,title=?,number=?,issue_date=?,due_date=?,client_name=?,
       client_address=?,client_id=?,currency=?,items_json=?,notes=?,updated_at=? WHERE id=? AND user_id=?`)

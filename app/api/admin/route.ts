@@ -19,13 +19,12 @@ export async function PATCH(request: Request) {
   try {
     const data = await request.json() as Record<string, unknown>;
     const userId = clean(data.userId, 200);
-    const plan = clean(data.plan, 20);
     const price = Number(data.priceBam);
-    if (!userId || !["free", "paid"].includes(plan) || !Number.isInteger(price) || price < 0 || price > 100000) {
+    if (!userId || !Number.isFinite(price) || price <= 0 || price > 100000 || Math.abs(Math.round(price * 100) - price * 100) > 0.000001) {
       return apiError("Nevažeći podaci.");
     }
-    const result = await db().prepare("UPDATE companies SET plan=?, price_bam=?, updated_at=? WHERE user_id=?")
-      .bind(plan, price, new Date().toISOString(), userId).run();
+    const result = await db().prepare("UPDATE companies SET price_bam=?, updated_at=? WHERE user_id=?")
+      .bind(price, new Date().toISOString(), userId).run();
     if (!result.meta.changes) return apiError("Firma nije pronađena.", 404);
     return Response.json({ ok: true });
   } catch (e) {

@@ -5,7 +5,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function AuthForm({ config, next }: { config: { url: string; key: string }; next: string }) {
+export function AuthForm({ config, next, appleEnabled }: { config: { url: string; key: string }; next: string; appleEnabled: boolean }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
@@ -43,7 +43,7 @@ export function AuthForm({ config, next }: { config: { url: string; key: string 
   }
 
   return <>
-    <div className="auth-providers"><Button disabled={busy} variant="outline" onClick={() => void oauth("google")}>Nastavi putem Google naloga</Button><Button disabled={busy} variant="outline" onClick={() => void oauth("apple")}>Nastavi putem Apple naloga</Button></div>
+    <div className="auth-providers"><Button disabled={busy} variant="outline" onClick={() => void oauth("google")}>Nastavi putem Google naloga</Button>{appleEnabled && <Button disabled={busy} variant="outline" onClick={() => void oauth("apple")}>Nastavi putem Apple naloga</Button>}</div>
     <div className="auth-divider">ili putem emaila</div>
     <div className="auth-tabs"><button className={mode === "signin" ? "selected" : ""} onClick={() => setMode("signin")}>Prijava</button><button className={mode === "signup" ? "selected" : ""} onClick={() => setMode("signup")}>Registracija</button></div>
     <form onSubmit={submit} className="auth-fields">

@@ -15,6 +15,13 @@
       "when": 1790344224988,
       "tag": "0001_mute_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790346051229,
+      "tag": "0002_white_the_spike",
+      "breakpoints": true
     }
   ]
 }

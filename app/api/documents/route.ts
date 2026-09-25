@@ -1,4 +1,4 @@
-import { apiError, clean, companyFor, currentMonth, db, identity, sameOrigin } from "@/lib/server";
+import { apiError, clean, companyFor, currentMonth, db, identity, paidActive, sameOrigin } from "@/lib/server";
 
 type Item = { name: string; quantity: number; unit: string; price: number; vat: number };
 
@@ -14,7 +14,7 @@ function documentInput(body: Record<string, unknown>, free: boolean, vatRegister
     vat: vatRegistered ? Number(row.vat) : 0,
   }));
   if (!["invoice", "offer", "custom"].includes(type) || !title) throw new Error("Izaberite vrstu i naziv dokumenta.");
-  if (!normalized.length || normalized.length > (free ? 5 : 100)) throw new Error(free ? "Besplatni paket dopušta najviše 5 stavki." : "Dokument može imati najviše 100 stavki.");
+  if (!normalized.length || normalized.length > (free && type === "invoice" ? 5 : 100)) throw new Error(free && type === "invoice" ? "Besplatni paket dopušta najviše 5 stavki po fakturi." : "Dokument može imati najviše 100 stavki.");
   if (normalized.some(i => !i.name || !Number.isFinite(i.quantity) || i.quantity <= 0 || i.quantity > 100000 ||
       !Number.isFinite(i.price) || i.price < 0 || i.price > 100000000 ||
       !Number.isFinite(i.vat) || i.vat < 0 || i.vat > 100)) throw new Error("Provjerite stavke, količine, cijene i PDV.");
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   try {
     const company = await companyFor(user.id);
     if (!company || company.status !== "approved") return apiError("Podaci firme nisu dostupni.", 403);
-    const input = documentInput(await request.json(), company.plan === "free", !!company.vat_registered);
+    const input = documentInput(await request.json(), !paidActive(company), !!company.vat_registered);
     const year = input.issueDate.slice(0, 4);
     const prefix = input.type === "invoice" ? "F" : input.type === "offer" ? "P" : "D";
     const start = `${prefix}-${year}-`;
@@ -71,12 +71,12 @@ export async function POST(request: Request) {
     const result = await db().prepare(`INSERT INTO documents
       (id,user_id,type,title,number,issue_date,due_date,client_name,client_address,client_id,currency,items_json,issuer_json,notes,month,created_at,updated_at)
       SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
-      WHERE ? = 'paid' OR
-        (SELECT COUNT(*) FROM documents WHERE user_id=? AND month=?) < 3`)
+      WHERE ? != 'invoice' OR ? = 1 OR
+        (SELECT COUNT(*) FROM documents WHERE user_id=? AND month=? AND type='invoice') < 3`)
       .bind(id,user.id,input.type,input.title,number,input.issueDate,input.dueDate,input.clientName,input.clientAddress,
         input.clientId,input.currency,JSON.stringify(input.items),JSON.stringify(issuer),input.notes,month,now,now,
-        company.plan,user.id,month).run();
-    if (!result.meta.changes) return apiError("Iskoristili ste 3 dokumenta ovog mjeseca. Za više dokumenata zatražite plaćeni paket.", 403);
+        input.type,paidActive(company)?1:0,user.id,month).run();
+    if (!result.meta.changes) return apiError("Iskoristili ste 3 fakture ovog mjeseca. Ponude i drugi dokumenti su i dalje dostupni.", 403);
     return Response.json({ id, number }, { status: 201 });
   } catch (e) {
     if (e instanceof Error && /UNIQUE constraint/.test(e.message)) return apiError("Broj dokumenta već postoji. Izaberite drugi ili pokušajte ponovo.", 409);
