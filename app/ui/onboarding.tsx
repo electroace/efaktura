@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,9 +10,9 @@ export type CompanyForm = {
   vatRegistered: boolean; iban: string; bank: string; phone: string; contactEmail: string;
 };
 
-export function Onboarding({ email, initial, settings = false }: {email: string; initial?: CompanyForm; settings?: boolean}) {
-  const router = useRouter();
+export function Onboarding({ email, initial, settings = false, hasLogo = false }: {email: string; initial?: CompanyForm; settings?: boolean; hasLogo?: boolean}) {
   const [form, setForm] = useState<CompanyForm>(initial ?? { name:"", address:"", city:"", postalCode:"", jib:"", vatId:"", vatRegistered:false, iban:"", bank:"", phone:"", contactEmail:email });
+  const [saved, setSaved] = useState(!!initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -24,8 +23,8 @@ export function Onboarding({ email, initial, settings = false }: {email: string;
       const response = await fetch("/api/company", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(form) });
       const data = await response.json() as {error?:string};
       if (!response.ok) throw new Error(data.error ?? "Podaci nisu sačuvani.");
-      setSuccess("Podaci su sačuvani.");
-      router.refresh();
+      setSaved(true);
+      setSuccess("Podaci su sačuvani. Sada možete dodati logo i napraviti dokument.");
     } catch (e) { setError(e instanceof Error ? e.message : "Pokušajte ponovo."); }
     finally {setBusy(false);}
   };
@@ -49,25 +48,36 @@ export function Onboarding({ email, initial, settings = false }: {email: string;
       {error && <p className="form-error" role="alert">{error}</p>}
       {success && <p className="form-success" role="status">{success}</p>}
       <Button className="submit-button" disabled={busy} type="submit">{busy ? "Čuvanje..." : settings ? "Sačuvaj izmjene" : "Otvori besplatni nalog"}</Button>
-    </form>{settings && <LogoUpload />}</div>
+    </form>
+    {saved ? <><LogoUpload initialHasLogo={hasLogo}/><div className="onboarding-next"><a href="/novi" className="primary-button">Kreiraj prvi dokument →</a><a href="/" className="secondary-button">Pregled dokumenata</a></div></>
+      : <p className="logo-upload-hint">Nakon što sačuvate firmu, ovdje ćete moći dodati njen logo.</p>}
+    </div>
   </section>;
 }
 
-function LogoUpload() {
+function LogoUpload({ initialHasLogo }: { initialHasLogo: boolean }) {
   const [status, setStatus] = useState("");
+  const [hasLogo, setHasLogo] = useState(initialHasLogo);
+  const [version, setVersion] = useState(0);
+  const [busy, setBusy] = useState(false);
   return <div className="logo-upload"><h3>Logo firme</h3><p>PNG, JPG ili WebP do 1 MB. Prikazuje se na novim dokumentima.</p>
+    {hasLogo && <div className="logo-upload-preview"><img src={`/api/logo?v=${version}`} alt="Trenutni logo firme"/><span>Vaš logo je sačuvan. Možete ga zamijeniti novom slikom.</span></div>}
     <form onSubmit={async e => {
       e.preventDefault();
       const input = e.currentTarget.querySelector<HTMLInputElement>('input[type="file"]');
-      if (!input?.files?.[0]) return;
-      setStatus("Slanje...");
+      if (!input?.files?.[0]) { setStatus("Prvo izaberite sliku."); return; }
+      if (input.files[0].size > 1024 * 1024) { setStatus("Logo može imati najviše 1 MB."); return; }
+      setBusy(true); setStatus("Slanje...");
       const body = new FormData(); body.append("logo", input.files[0]);
       try {
         const result = await fetch("/api/logo", {method:"POST", body});
         const data = await result.json() as {error?:string};
-        setStatus(result.ok ? "Logo je sačuvan." : data.error ?? "Logo nije sačuvan.");
-      } catch { setStatus("Logo nije sačuvan."); }
-    }}><Input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Logo firme"/><Button type="submit" variant="outline">Pošalji logo</Button></form>
+        if (!result.ok) throw new Error(data.error ?? "Logo nije sačuvan.");
+        setHasLogo(true); setVersion(Date.now()); setStatus("Logo je sačuvan i prikazivat će se na novim dokumentima.");
+        input.value = "";
+      } catch (error) { setStatus(error instanceof Error ? error.message : "Logo nije sačuvan."); }
+      finally { setBusy(false); }
+    }}><Input type="file" accept="image/png,image/jpeg,image/webp" aria-label="Logo firme"/><Button type="submit" disabled={busy} variant="outline">{busy ? "Slanje..." : hasLogo ? "Zamijeni logo" : "Pošalji logo"}</Button></form>
     {status && <span role="status">{status}</span>}
   </div>;
 }
