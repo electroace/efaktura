@@ -25,14 +25,17 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if (!company || company.status !== "approved") return apiError("Podaci firme nisu dostupni.", 403);
     const old = await db().prepare("SELECT * FROM documents WHERE id=? AND user_id=?").bind(id, user.id).first<DocumentRecord>();
     if (!old) return apiError("Dokument nije pronađen.", 404);
-    const issuer = JSON.parse(old.issuer_json) as {vatRegistered?:boolean};
+    const issuer = JSON.parse(old.issuer_json) as {vatRegistered?:boolean;contactPerson?:string};
     const input = documentInput(await request.json(), !paidActive(company), !!issuer.vatRegistered);
     if (input.type !== old.type) return apiError("Vrstu sačuvanog dokumenta nije moguće promijeniti. Kreirajte novi dokument.");
     const number = input.manualNumber || old.number;
+    const updatedIssuer = {...issuer,contactPerson:issuer.contactPerson ?? company.contact_person};
     await db().prepare(`UPDATE documents SET type=?,title=?,number=?,issue_date=?,due_date=?,client_name=?,
-      client_address=?,client_id=?,currency=?,items_json=?,notes=?,updated_at=? WHERE id=? AND user_id=?`)
+      client_address=?,client_id=?,client_contact=?,show_client_contact=?,show_issuer_contact=?,fiscal_number=?,
+      currency=?,items_json=?,issuer_json=?,notes=?,updated_at=? WHERE id=? AND user_id=?`)
       .bind(input.type,input.title,number,input.issueDate,input.dueDate,input.clientName,input.clientAddress,
-        input.clientId,input.currency,JSON.stringify(input.items),input.notes,new Date().toISOString(),id,user.id).run();
+        input.clientId,input.clientContact,input.showClientContact?1:0,input.showIssuerContact?1:0,input.fiscalNumber,
+        input.currency,JSON.stringify(input.items),JSON.stringify(updatedIssuer),input.notes,new Date().toISOString(),id,user.id).run();
     return Response.json({ id, number });
   } catch (e) {
     if (e instanceof Error && /UNIQUE constraint/.test(e.message)) return apiError("Broj dokumenta već postoji.", 409);
