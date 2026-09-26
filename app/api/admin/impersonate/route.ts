@@ -4,7 +4,7 @@ import { apiError, companyFor, isAdmin, realIdentity, sameOrigin } from "@/lib/s
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return apiError("Nevažeći zahtjev.", 403);
   const admin = await realIdentity();
-  if (!admin || !isAdmin(admin.email)) return apiError("Zabranjen pristup.", 403);
+  if (!admin || !isAdmin(admin.email,admin.id)) return apiError("Zabranjen pristup.", 403);
   const data = request.headers.get("content-type")?.includes("application/json")
     ? await request.json() as {userId?:unknown;mode?:unknown}
     : Object.fromEntries(await request.formData()) as {userId?:unknown;mode?:unknown};

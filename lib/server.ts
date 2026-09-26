@@ -62,7 +62,7 @@ async function ensureCompanyColumns() {
 
 export async function workspaceUser(): Promise<AppUser | null> {
   const user = await getAppUser();
-  if (!user || !isAdmin(user.email)) return user;
+  if (!user || !isAdmin(user.email,user.userId)) return user;
   const selected = (await cookies()).get("efaktura-acting-as")?.value;
   if (!selected || selected === user.userId) return user;
   const tenant = await db().prepare("SELECT user_id,email FROM companies WHERE user_id=? AND status='approved'")
@@ -105,7 +105,10 @@ export function addCalendarMonth(value: string) {
   return date.toISOString();
 }
 
-export const isAdmin = (email: string) => email.toLowerCase() === "electroace@gmail.com";
+// The email alone is unsafe while email verification is disabled in Supabase.
+// Bind administration to the pre-existing account ID as well as the email.
+export const isAdmin = (email: string, userId: string) =>
+  userId === "ed10372e-64fc-4fcf-8216-8d1bb3bedf7a" && email.toLowerCase() === "electroace@gmail.com";
 
 export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");

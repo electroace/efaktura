@@ -37,6 +37,6 @@ export function AdminTable() {
       <div className="admin-plan-state">{c.plan === "paid" && c.paid_until && c.paid_until > new Date().toISOString() ? `Plaćeni do ${new Date(c.paid_until).toLocaleDateString("bs-BA")}` : "Besplatni paket"}</div>
       <label>Cijena KM / mj. s PDV-om <Input type="number" min="0.01" max="100000" step="0.01" value={c.price_bam} onChange={e=>change(c.user_id,"price_bam",Number(e.target.value))}/></label>
       <Button onClick={()=>save(c)} disabled={busy===c.user_id}>{busy===c.user_id ? "Čuvanje..." : "Sačuvaj"}</Button>
-      <Button variant="outline" onClick={()=>enter(c)} disabled={!!busy}>Uđi u konzolu</Button>
+      {c.email.toLowerCase()!=="electroace@gmail.com"&&<Button variant="outline" onClick={()=>enter(c)} disabled={!!busy}>Uđi u konzolu</Button>}
     </article>)}</div>}</section>;
 }

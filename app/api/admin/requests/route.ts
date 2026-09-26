@@ -3,7 +3,7 @@ import { notifyAdmin, type PlanRequest } from "@/lib/billing";
 
 export async function GET() {
   const user = await realIdentity();
-  if (!user || !isAdmin(user.email)) return apiError("Zabranjen pristup.", 403);
+  if (!user || !isAdmin(user.email,user.id)) return apiError("Zabranjen pristup.", 403);
   try {
     const rows = await db().prepare(`SELECT r.*, c.name AS customer_name, c.email AS customer_email
       FROM plan_requests r JOIN companies c ON c.user_id=r.user_id
@@ -15,7 +15,7 @@ export async function GET() {
 export async function PATCH(request: Request) {
   if (!sameOrigin(request)) return apiError("Nevažeći zahtjev.", 403);
   const user = await realIdentity();
-  if (!user || !isAdmin(user.email)) return apiError("Zabranjen pristup.", 403);
+  if (!user || !isAdmin(user.email,user.id)) return apiError("Zabranjen pristup.", 403);
   try {
     const data = await request.json() as Record<string, unknown>;
     const id = clean(data.id, 80);
