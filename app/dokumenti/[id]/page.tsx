@@ -1,12 +1,11 @@
 import { notFound } from "next/navigation";
-import { requireAppUser } from "@/lib/app-auth";
-import { companyFor, db, paidActive, type DocumentRecord, type Customer, type CatalogItem } from "@/lib/server";
+import { companyFor, db, paidActive, requireWorkspaceUser, type DocumentRecord, type Customer, type CatalogItem } from "@/lib/server";
 import { Editor } from "../../ui/editor";
 import { AppHeader } from "../../ui/app-header";
 
 export const dynamic = "force-dynamic";
 export default async function DocumentPage({params}:{params:Promise<{id:string}>}) {
-  const user = await requireAppUser("/");
+  const user = await requireWorkspaceUser("/");
   const {id} = await params;
   const [company,doc,customers,items] = await Promise.all([
     companyFor(user.userId),

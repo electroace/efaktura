@@ -327,3 +327,19 @@ h1,h2,h3,p {margin-top:0}
   .paper-table tr,.paper-payment-row,.paper-note,.paper-bottom {break-inside:avoid}
   .paper-bottom {padding-top:35px}
 }
+
+/* Zaglavlje dokumenta: podaci izdavaoca stoje uz logo, uključujući ispis. */
+.document-paper .paper-topline {align-items:flex-start;min-height:110px;gap:25px}
+.document-paper .paper-brand {width:155px;flex:none;align-self:flex-start}
+.document-paper .paper-logo {max-width:150px;max-height:95px}
+.document-paper .paper-issuer {flex:1;text-align:right;min-width:0;overflow-wrap:anywhere}
+.document-paper .paper-header {display:block;min-height:0;margin-bottom:22px}
+.document-paper .paper-title h2 {font-size:clamp(1.8rem,3vw,2.4rem)}
+.impersonation-banner {display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;background:#e8f3f1;color:#164c50;padding:9px 20px;font-size:.86rem}
+.impersonation-banner form {margin:0}.impersonation-banner button {border:1px solid #1a7777;background:white;border-radius:6px;color:#126565;padding:6px 10px;font-weight:700;cursor:pointer}
+.header-purchase {position:relative}.header-purchase .header-upgrade {border:0;cursor:pointer;font:inherit}.header-purchase .header-upgrade:disabled {opacity:.6;cursor:wait}
+.header-purchase-message {position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1px solid #bddbdc;box-shadow:0 10px 30px #17365322;color:#24475c;padding:11px;border-radius:8px;width:260px;z-index:20;font-size:.78rem}
+.header-purchase-message a {color:#0a6b75;font-weight:700}
+.admin-row {grid-template-columns:minmax(170px,1.5fr) minmax(130px,1fr) minmax(150px,1fr) auto auto}
+@media(max-width:800px) {.admin-row {grid-template-columns:1fr 1fr}.admin-row>button {grid-column:auto}.document-paper .paper-brand {width:95px}.document-paper .paper-logo {max-width:95px;max-height:70px}}
+@media print {.impersonation-banner {display:none!important}.document-paper .paper-topline {min-height:29mm}.document-paper .paper-brand {width:34mm}.document-paper .paper-logo {max-width:34mm;max-height:25mm}}

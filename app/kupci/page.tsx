@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireAppUser } from "@/lib/app-auth";
+import { requireWorkspaceUser } from "@/lib/server";
 import { companyFor, db, paidActive, type Customer } from "@/lib/server";
 import { AppHeader } from "../ui/app-header";
 import { CustomerDirectory } from "../ui/directories";
@@ -7,7 +7,7 @@ import { CustomerDirectory } from "../ui/directories";
 export const dynamic = "force-dynamic";
 
 export default async function CustomersPage() {
-  const user = await requireAppUser("/kupci");
+  const user = await requireWorkspaceUser("/kupci");
   const company = await companyFor(user.userId);
   if (company?.status !== "approved") redirect("/");
   const rows = await db().prepare("SELECT * FROM customers WHERE user_id=? ORDER BY name COLLATE NOCASE LIMIT 1000").bind(user.userId).all<Customer>();

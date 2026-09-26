@@ -1,12 +1,11 @@
-import { requireAppUser } from "@/lib/app-auth";
-import { companyFor, db, paidActive } from "@/lib/server";
+import { companyFor, db, paidActive, requireWorkspaceUser } from "@/lib/server";
 import { billingReady, billingSettings, type PlanRequest } from "@/lib/billing";
 import { PlanAccess } from "../ui/plan-access";
 import { AppHeader } from "../ui/app-header";
 
 export const dynamic = "force-dynamic";
 export default async function SubscriptionPage() {
-  const user = await requireAppUser("/pretplata");
+  const user = await requireWorkspaceUser("/pretplata");
   const company = await companyFor(user.userId);
   if (!company || company.status !== "approved") return <div className="app-frame"><AppHeader user={user}/><main className="app-main"><section className="panel center-state"><h1>Prvo unesite svoju firmu</h1><p>Nakon unosa podataka firme možete izabrati neograničeni paket i preuzeti predračun.</p><a href="/" className="primary-button">Unesi podatke firme →</a></section></main></div>;
   const [settings, rows] = await Promise.all([

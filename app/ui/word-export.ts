@@ -1,7 +1,8 @@
 import { Document, Paragraph, TextRun, Table, TableRow, TableCell, AlignmentType, Packer, ImageRun, WidthType, BorderStyle } from "docx";
+import { documentTotals, lineAmounts } from "@/lib/document-totals";
 
-type Item = {name:string;description?:string;sku?:string;quantity:number;unit:string;price:number;vat:number};
-type Issuer = {name:string;address:string;city:string;postalCode:string;jib:string;vatId:string;vatRegistered:boolean;iban:string;bank:string;phone:string;email:string;contactPerson?:string;responsiblePerson?:string;electronicNotice?:boolean;signatureLine?:boolean;logoKey:string|null};
+type Item = {name:string;description?:string;sku?:string;quantity:number;unit:string;price:number;vat:number;discount?:number};
+type Issuer = {name:string;address:string;city:string;postalCode:string;jib:string;vatId:string;vatRegistered:boolean;iban:string;bank:string;phone:string;email:string;contactPerson?:string;responsiblePerson?:string;electronicNotice?:boolean;signatureLine?:boolean;showDiscount?:boolean;logoKey:string|null};
 type DocData = {id?:string;type:string;title:string;number:string;issueDate:string;dueDate:string;clientName:string;clientAddress:string;clientId:string;clientContact:string;showClientContact:boolean;showIssuerContact:boolean;fiscalNumber:string;currency:string;items:Item[];notes:string};
 const money = (n:number,currency:string) => new Intl.NumberFormat("bs-BA",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+" "+currency;
 const cell=(value:string,header=false)=>new TableCell({shading:header?{fill:"193C50"}:undefined,children:[new Paragraph({children:[new TextRun({text:value,bold:header,color:header?"FFFFFF":"243F52",size:header?18:19})],spacing:{after:0}})]});
@@ -9,6 +10,7 @@ const label=(value:string)=>new Paragraph({children:[new TextRun({text:value,bol
 
 export async function downloadWord(doc:DocData,issuer:Issuer) {
   const children:(Paragraph|Table)[]=[];
+  let logo=new Paragraph({children:[new TextRun({text:issuer.name.slice(0,1).toUpperCase(),bold:true,size:44,color:"0D878C"})]});
   if(issuer.logoKey) {
     try {
       const image=await fetch(doc.id?`/api/logo?document=${encodeURIComponent(doc.id)}`:"/api/logo");
@@ -26,15 +28,21 @@ export async function downloadWord(doc:DocData,issuer:Issuer) {
             if(converted) bytes=new Uint8Array(await converted.arrayBuffer());
             bitmap.close();
           }
-          children.push(new Paragraph({children:[new ImageRun({data:bytes,type:format,transformation:{width:120,height:60}})]}));
+          logo=new Paragraph({children:[new ImageRun({data:bytes,type:format,transformation:{width:120,height:60}})]});
         }
       }
     } catch { /* The document remains usable without a logo. */ }
   }
-  children.push(new Paragraph({children:[new TextRun({text:issuer.name,bold:true,size:26,color:"193C50"})],spacing:{after:90},border:{bottom:{style:BorderStyle.SINGLE,color:"0D878C",size:13,space:12}}}));
-  children.push(new Paragraph({text:`${issuer.address}, ${issuer.postalCode} ${issuer.city}  ·  JIB: ${issuer.jib}${issuer.vatId?`  ·  PDV: ${issuer.vatId}`:""}`,spacing:{before:150,after:40}}));
-  children.push(new Paragraph({text:`${issuer.phone}${issuer.phone&&issuer.email?"  ·  ":""}${issuer.email}`,spacing:{after:90}}));
-  if(doc.showIssuerContact&&issuer.contactPerson)children.push(new Paragraph({text:`Kontakt osoba: ${issuer.contactPerson}`}));
+  const issuerDetails=[
+    new Paragraph({children:[new TextRun({text:issuer.name,bold:true,size:26,color:"193C50"})],alignment:AlignmentType.RIGHT}),
+    new Paragraph({text:`${issuer.address}, ${issuer.postalCode} ${issuer.city}`,alignment:AlignmentType.RIGHT}),
+    new Paragraph({text:`JIB: ${issuer.jib}${issuer.vatId?`  ·  PDV: ${issuer.vatId}`:""}`,alignment:AlignmentType.RIGHT}),
+    new Paragraph({text:`${issuer.phone}${issuer.phone&&issuer.email?"  ·  ":""}${issuer.email}`,alignment:AlignmentType.RIGHT}),
+  ];
+  if(doc.showIssuerContact&&issuer.contactPerson)issuerDetails.push(new Paragraph({text:`Kontakt osoba: ${issuer.contactPerson}`,alignment:AlignmentType.RIGHT}));
+  const none={style:BorderStyle.NONE};
+  children.push(new Table({rows:[new TableRow({children:[new TableCell({children:[logo],width:{size:28,type:WidthType.PERCENTAGE}}),new TableCell({children:issuerDetails,width:{size:72,type:WidthType.PERCENTAGE}})]})],width:{size:100,type:WidthType.PERCENTAGE},borders:{top:none,bottom:none,left:none,right:none,insideHorizontal:none,insideVertical:none}}));
+  children.push(new Paragraph({text:"",border:{bottom:{style:BorderStyle.SINGLE,color:"0D878C",size:13,space:12}}}));
   children.push(new Paragraph({children:[new TextRun({text:doc.title.toLocaleUpperCase("bs"),bold:true,size:38,color:"193C50"})],spacing:{before:360,after:50}}));
   children.push(new Paragraph({children:[new TextRun({text:doc.number,color:"0D878C",bold:true,size:23})],spacing:{after:240}}));
   const buyer=[label("IZDATO ZA"),new Paragraph({children:[new TextRun({text:doc.clientName,bold:true,size:21,color:"193C50"})]})];
@@ -46,18 +54,19 @@ export async function downloadWord(doc:DocData,issuer:Issuer) {
   if(doc.fiscalNumber)facts.push(new Paragraph({text:`BF: ${doc.fiscalNumber}`}));
   children.push(new Table({rows:[new TableRow({children:[new TableCell({shading:{fill:"F1F7F8"},children:buyer}),new TableCell({shading:{fill:"F1F7F8"},children:facts})]})],width:{size:100,type:WidthType.PERCENTAGE}}));
   children.push(new Paragraph({text:"",spacing:{after:120}}));
-  const headers=["Opis","Kol.","Cijena",...(issuer.vatRegistered?["PDV"]:[]),"Iznos"];
+  const headers=["Opis","Kol.","Cijena",...(issuer.showDiscount?["Rabat"]:[]),...(issuer.vatRegistered?["PDV"]:[]),"Iznos"];
   const rows=[new TableRow({children:headers.map(h=>cell(h,true))}),...doc.items.map(i=>new TableRow({children:[
     cell(`${i.name}${i.sku?` · Šifra: ${i.sku}`:""}${i.description?`\n${i.description}`:""} (${i.unit})`),cell(String(i.quantity)),cell(money(i.price,doc.currency)),
+    ...(issuer.showDiscount?[cell(`${i.discount??0}%`)]:[]),
     ...(issuer.vatRegistered?[cell(`${i.vat}%`)]:[]),
-    cell(money(Math.round(i.quantity*i.price*100)/100,doc.currency)),
+    cell(money(lineAmounts(i).net/100,doc.currency)),
   ]}))];
   children.push(new Table({rows,width:{size:100,type:WidthType.PERCENTAGE}}));
-  const subtotal=doc.items.reduce((n,i)=>n+Math.round(i.quantity*i.price*100),0);
-  const vat=doc.items.reduce((n,i)=>n+Math.round(Math.round(i.quantity*i.price*100)*i.vat/100),0);
-  children.push(new Paragraph({text:`Osnovica: ${money(subtotal/100,doc.currency)}`,alignment:AlignmentType.RIGHT,spacing:{before:260}}));
-  if(issuer.vatRegistered)children.push(new Paragraph({text:`PDV: ${money(vat/100,doc.currency)}`,alignment:AlignmentType.RIGHT}));
-  children.push(new Paragraph({children:[new TextRun({text:`UKUPNO ZA PLAĆANJE   ${money((subtotal+vat)/100,doc.currency)}`,bold:true,color:"0B6970",size:24})],alignment:AlignmentType.RIGHT,spacing:{before:120,after:270},border:{top:{style:BorderStyle.SINGLE,color:"B5D6D7",size:8,space:10}}}));
+  const totals=documentTotals(doc.items);
+  if(issuer.showDiscount){children.push(new Paragraph({text:`Prije rabata: ${money(totals.gross/100,doc.currency)}`,alignment:AlignmentType.RIGHT,spacing:{before:260}}));children.push(new Paragraph({text:`Rabat: -${money(totals.discount/100,doc.currency)}`,alignment:AlignmentType.RIGHT}));}
+  children.push(new Paragraph({text:`Osnovica: ${money(totals.net/100,doc.currency)}`,alignment:AlignmentType.RIGHT,spacing:{before:issuer.showDiscount?0:260}}));
+  if(issuer.vatRegistered)children.push(new Paragraph({text:`PDV: ${money(totals.vat/100,doc.currency)}`,alignment:AlignmentType.RIGHT}));
+  children.push(new Paragraph({children:[new TextRun({text:`UKUPNO ZA PLAĆANJE   ${money((totals.net+totals.vat)/100,doc.currency)}`,bold:true,color:"0B6970",size:24})],alignment:AlignmentType.RIGHT,spacing:{before:120,after:270},border:{top:{style:BorderStyle.SINGLE,color:"B5D6D7",size:8,space:10}}}));
   if(issuer.iban||issuer.bank){children.push(label("PODACI ZA UPLATU"));children.push(new Paragraph({text:`${issuer.bank}   ${issuer.iban}`}));}
   if(doc.notes){children.push(label("NAPOMENA"));children.push(new Paragraph({text:doc.notes,spacing:{after:260}}));}
   if(issuer.signatureLine)children.push(new Paragraph({text:"",spacing:{before:420,after:180},indent:{left:5500},border:{bottom:{style:BorderStyle.SINGLE,color:"24465A",size:9,space:8}}}));

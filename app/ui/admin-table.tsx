@@ -23,11 +23,20 @@ export function AdminTable() {
     catch(e){setError(e instanceof Error ? e.message : "Izmjene nisu sačuvane.");}
     finally{setBusy("");}
   };
+  const enter = async (c:Company) => {
+    setBusy(c.user_id);setError("");
+    try {
+      const r=await fetch("/api/admin/impersonate",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({userId:c.user_id})});
+      const d=await r.json() as {error?:string};if(!r.ok)throw new Error(d.error);
+      window.location.assign("/");
+    } catch(e) {setError(e instanceof Error?e.message:"Konzola nije dostupna.");setBusy("");}
+  };
   return <section className="panel admin-panel">{error && <p className="form-error" role="alert">{error}</p>}
     {loading ? <p>Učitavanje prijava...</p> : !companies.length ? <p>Još nema prijava firmi.</p> : <div className="admin-list">{companies.map(c=><article className="admin-row" key={c.user_id}>
       <div className="admin-identity"><strong>{c.name}</strong><span>{c.city} · JIB {c.jib}</span><span>{c.email} · {new Date(c.created_at).toLocaleDateString("bs-BA")}</span></div>
       <div className="admin-plan-state">{c.plan === "paid" && c.paid_until && c.paid_until > new Date().toISOString() ? `Plaćeni do ${new Date(c.paid_until).toLocaleDateString("bs-BA")}` : "Besplatni paket"}</div>
       <label>Cijena KM / mj. s PDV-om <Input type="number" min="0.01" max="100000" step="0.01" value={c.price_bam} onChange={e=>change(c.user_id,"price_bam",Number(e.target.value))}/></label>
       <Button onClick={()=>save(c)} disabled={busy===c.user_id}>{busy===c.user_id ? "Čuvanje..." : "Sačuvaj"}</Button>
+      <Button variant="outline" onClick={()=>enter(c)} disabled={!!busy}>Uđi u konzolu</Button>
     </article>)}</div>}</section>;
 }

@@ -1,22 +1,23 @@
 import { apiError, clean, companyFor, currentMonth, db, identity, paidActive, sameOrigin } from "@/lib/server";
 
-type Item = { name: string; description: string; sku: string; quantity: number; unit: string; price: number; vat: number };
+type Item = { name: string; description: string; sku: string; quantity: number; unit: string; price: number; vat: number; discount:number };
 
-function documentInput(body: Record<string, unknown>, free: boolean, vatRegistered: boolean) {
+function documentInput(body: Record<string, unknown>, free: boolean, vatRegistered: boolean, showDiscount:boolean, titles:{invoice:string;offer:string}) {
   const type = clean(body.type, 20);
-  const title = type === "custom" ? clean(body.title, 100) : type === "offer" ? "Ponuda" : "Faktura";
+  const title = type === "custom" ? clean(body.title, 100) : type === "offer" ? titles.offer : titles.invoice;
   const items = Array.isArray(body.items) ? body.items : [];
   const normalized: Item[] = items.map((value: unknown) => {
     const row = value && typeof value === "object" ? value as Record<string, unknown> : {};
     return {name:clean(row.name,180),description:clean(row.description,500),sku:clean(row.sku,60),
       quantity:Number(row.quantity),unit:clean(row.unit,24)||"kom",price:Number(row.price),
-      vat:vatRegistered?Number(row.vat):0};
+      vat:vatRegistered?Number(row.vat):0,discount:showDiscount?Number(row.discount??0):0};
   });
   if (!["invoice", "offer", "custom"].includes(type) || !title) throw new Error("Izaberite vrstu i naziv dokumenta.");
-  if (!normalized.length || normalized.length > (free && type === "invoice" ? 5 : 100)) throw new Error(free && type === "invoice" ? "Besplatni paket dopušta najviše 5 stavki po fakturi." : "Dokument može imati najviše 100 stavki.");
+  if (!normalized.length || normalized.length > (free ? 5 : 100)) throw new Error(free ? "Besplatni paket dopušta najviše 5 stavki po dokumentu." : "Dokument može imati najviše 100 stavki.");
   if (normalized.some(i => !i.name || !Number.isFinite(i.quantity) || i.quantity <= 0 || i.quantity > 100000 ||
       !Number.isFinite(i.price) || i.price < 0 || i.price > 100000000 ||
-      !Number.isFinite(i.vat) || i.vat < 0 || i.vat > 100)) throw new Error("Provjerite stavke, količine, cijene i PDV.");
+      !Number.isFinite(i.vat) || i.vat < 0 || i.vat > 100 ||
+      !Number.isFinite(i.discount) || i.discount < 0 || i.discount > 100)) throw new Error("Provjerite stavke, količine, cijene, PDV i rabat.");
   const issueDate = clean(body.issueDate, 10);
   const dueDate = clean(body.dueDate, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(issueDate) || (dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate))) throw new Error("Unesite ispravan datum.");
@@ -54,7 +55,8 @@ export async function POST(request: Request) {
   try {
     const company = await companyFor(user.id);
     if (!company || company.status !== "approved") return apiError("Podaci firme nisu dostupni.", 403);
-    const input = documentInput(await request.json(), !paidActive(company), !!company.vat_registered);
+    const input = documentInput(await request.json(), !paidActive(company), !!company.vat_registered,!!company.show_discount,
+      {invoice:company.invoice_title,offer:company.offer_title});
     const year = input.issueDate.slice(0, 4);
     const prefix = input.type === "invoice" ? "F" : input.type === "offer" ? "P" : "D";
     const start = `${prefix}-${year}-`;
@@ -71,18 +73,19 @@ export async function POST(request: Request) {
       logoKey: company.logo_key, contactPerson: company.contact_person,
       responsiblePerson: company.responsible_person,
       electronicNotice: !!company.electronic_notice, signatureLine: !!company.show_signature_line,
+      showDiscount:!!company.show_discount,
     };
     const result = await db().prepare(`INSERT INTO documents
       (id,user_id,type,title,number,issue_date,due_date,client_name,client_address,client_id,client_contact,
        show_client_contact,show_issuer_contact,fiscal_number,currency,items_json,issuer_json,notes,month,created_at,updated_at)
       SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
-      WHERE ? != 'invoice' OR ? = 1 OR
-        (SELECT COUNT(*) FROM documents WHERE user_id=? AND month=? AND type='invoice') < 3`)
+      WHERE ? = 1 OR
+        (SELECT COUNT(*) FROM documents WHERE user_id=? AND month=?) < 3`)
       .bind(id,user.id,input.type,input.title,number,input.issueDate,input.dueDate,input.clientName,input.clientAddress,
         input.clientId,input.clientContact,input.showClientContact?1:0,input.showIssuerContact?1:0,input.fiscalNumber,
         input.currency,JSON.stringify(input.items),JSON.stringify(issuer),input.notes,month,now,now,
-        input.type,paidActive(company)?1:0,user.id,month).run();
-    if (!result.meta.changes) return apiError("Iskoristili ste 3 fakture ovog mjeseca. Ponude i drugi dokumenti su i dalje dostupni.", 403);
+        paidActive(company)?1:0,user.id,month).run();
+    if (!result.meta.changes) return apiError("Iskoristili ste 3 besplatna dokumenta ovog mjeseca.", 403);
     return Response.json({ id, number }, { status: 201 });
   } catch (e) {
     if (e instanceof Error && /UNIQUE constraint/.test(e.message)) return apiError("Broj dokumenta već postoji. Izaberite drugi ili pokušajte ponovo.", 409);

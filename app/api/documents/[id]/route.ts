@@ -25,8 +25,9 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     if (!company || company.status !== "approved") return apiError("Podaci firme nisu dostupni.", 403);
     const old = await db().prepare("SELECT * FROM documents WHERE id=? AND user_id=?").bind(id, user.id).first<DocumentRecord>();
     if (!old) return apiError("Dokument nije pronađen.", 404);
-    const issuer = JSON.parse(old.issuer_json) as {vatRegistered?:boolean;contactPerson?:string};
-    const input = documentInput(await request.json(), !paidActive(company), !!issuer.vatRegistered);
+    const issuer = JSON.parse(old.issuer_json) as {vatRegistered?:boolean;contactPerson?:string;showDiscount?:boolean};
+    const input = documentInput(await request.json(), !paidActive(company), !!issuer.vatRegistered,!!issuer.showDiscount,
+      {invoice:old.title,offer:old.title});
     if (input.type !== old.type) return apiError("Vrstu sačuvanog dokumenta nije moguće promijeniti. Kreirajte novi dokument.");
     const number = input.manualNumber || old.number;
     const updatedIssuer = {...issuer,contactPerson:issuer.contactPerson ?? company.contact_person};

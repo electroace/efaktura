@@ -1,8 +1,8 @@
-import { addCalendarMonth, apiError, clean, db, identity, isAdmin, sameOrigin } from "@/lib/server";
+import { addCalendarMonth, apiError, clean, db, realIdentity, isAdmin, sameOrigin } from "@/lib/server";
 import { notifyAdmin, type PlanRequest } from "@/lib/billing";
 
 export async function GET() {
-  const user = await identity();
+  const user = await realIdentity();
   if (!user || !isAdmin(user.email)) return apiError("Zabranjen pristup.", 403);
   try {
     const rows = await db().prepare(`SELECT r.*, c.name AS customer_name, c.email AS customer_email
@@ -14,7 +14,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   if (!sameOrigin(request)) return apiError("Nevažeći zahtjev.", 403);
-  const user = await identity();
+  const user = await realIdentity();
   if (!user || !isAdmin(user.email)) return apiError("Zabranjen pristup.", 403);
   try {
     const data = await request.json() as Record<string, unknown>;

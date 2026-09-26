@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireAppUser } from "@/lib/app-auth";
+import { requireWorkspaceUser } from "@/lib/server";
 import { companyFor, db, paidActive, type CatalogItem } from "@/lib/server";
 import { AppHeader } from "../ui/app-header";
 import { ItemDirectory } from "../ui/directories";
@@ -7,7 +7,7 @@ import { ItemDirectory } from "../ui/directories";
 export const dynamic = "force-dynamic";
 
 export default async function ItemsPage() {
-  const user = await requireAppUser("/stavke");
+  const user = await requireWorkspaceUser("/stavke");
   const company = await companyFor(user.userId);
   if (company?.status !== "approved") redirect("/");
   const rows = await db().prepare("SELECT * FROM catalog_items WHERE user_id=? ORDER BY name COLLATE NOCASE LIMIT 1000").bind(user.userId).all<CatalogItem>();

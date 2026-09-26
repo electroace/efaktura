@@ -9,11 +9,12 @@ export type CompanyForm = {
   name: string; address: string; city: string; postalCode: string; jib: string; vatId: string;
   vatRegistered: boolean; iban: string; bank: string; phone: string; contactEmail: string; contactPerson: string;
   defaultNote: string; responsiblePerson: string; electronicNotice: boolean; showSignatureLine: boolean;
+  invoiceTitle: "Faktura" | "Račun"; offerTitle: "Ponuda" | "Predračun"; showDiscount: boolean;
 };
 
 export function Onboarding({ email, initial, settings = false, hasLogo = false }: {email: string; initial?: CompanyForm; settings?: boolean; hasLogo?: boolean}) {
-  const [form, setForm] = useState<CompanyForm>(initial ?? { name:"", address:"", city:"", postalCode:"", jib:"", vatId:"", vatRegistered:false, iban:"", bank:"", phone:"", contactEmail:email, contactPerson:"", defaultNote:"", responsiblePerson:"", electronicNotice:true, showSignatureLine:false });
-  const [saved, setSaved] = useState(!!initial);
+  const [form, setForm] = useState<CompanyForm>(initial ?? { name:"", address:"", city:"", postalCode:"", jib:"", vatId:"", vatRegistered:false, iban:"", bank:"", phone:"", contactEmail:email, contactPerson:"", defaultNote:"", responsiblePerson:"", electronicNotice:true, showSignatureLine:false,invoiceTitle:"Faktura",offerTitle:"Ponuda",showDiscount:false });
+  const [saved, setSaved] = useState(!!initial && settings);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -43,11 +44,13 @@ export function Onboarding({ email, initial, settings = false, hasLogo = false }
         <label className="checkbox-row full"><Checkbox checked={form.vatRegistered} onCheckedChange={value=>set("vatRegistered",value === true)}/> Firma je u sistemu PDV-a</label>
         <label>Transakcijski račun / IBAN <Input value={form.iban} onChange={e=>set("iban",e.target.value)} /></label>
         <label>Banka <Input value={form.bank} onChange={e=>set("bank",e.target.value)} /></label>
-        <label>Telefon <Input value={form.phone} onChange={e=>set("phone",e.target.value)} /></label>
+        <label>Telefon <Input required={!settings} value={form.phone} onChange={e=>set("phone",e.target.value)} /></label>
         <label>Email na dokumentu <Input type="email" value={form.contactEmail} onChange={e=>set("contactEmail",e.target.value)} /></label>
-        <label className="full">Kontakt osoba firme <Input value={form.contactPerson} onChange={e=>set("contactPerson",e.target.value)} placeholder="Ime i prezime (opcionalno)" /></label>
+        <label className="full">Ime i prezime / kontakt osoba firme <Input required={!settings} value={form.contactPerson} onChange={e=>set("contactPerson",e.target.value)} placeholder="Ime i prezime" /></label>
       </div>
       <div className="settings-document"><h2>Izgled novih dokumenata</h2>
+        <div className="form-grid"><label>Naziv fakture / računa <select className="native-select" value={form.invoiceTitle} onChange={e=>set("invoiceTitle",e.target.value)}><option>Faktura</option><option>Račun</option></select></label><label>Naziv ponude / predračuna <select className="native-select" value={form.offerTitle} onChange={e=>set("offerTitle",e.target.value)}><option>Ponuda</option><option>Predračun</option></select></label></div>
+        <label className="settings-check"><Checkbox checked={form.showDiscount} onCheckedChange={checked=>set("showDiscount",checked===true)}/><span>Omogući unos i prikaz rabata (%) na dokumentima</span></label>
         <label>Zadana napomena <textarea className="notes-input" rows={3} maxLength={1600} value={form.defaultNote} onChange={e=>set("defaultNote",e.target.value)} placeholder="Npr. uslovi isporuke ili plaćanja"/><small>Predlaže se u svakom novom dokumentu; možete je promijeniti na pojedinačnoj fakturi.</small></label>
         <label>Odgovorno lice <Input value={form.responsiblePerson} onChange={e=>set("responsiblePerson",e.target.value)} placeholder="Ime i prezime odgovornog lica"/></label>
         <label className="settings-check"><Checkbox checked={form.electronicNotice} onCheckedChange={checked=>setForm(prev=>({...prev,electronicNotice:checked===true,showSignatureLine:checked===true?false:prev.showSignatureLine}))}/><span>Na dnu prikaži: „Dokument je elektronski izdat i važi bez pečata i potpisa.“</span></label>

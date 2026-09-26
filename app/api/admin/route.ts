@@ -1,7 +1,7 @@
-import { apiError, clean, db, identity, isAdmin, sameOrigin } from "@/lib/server";
+import { apiError, clean, db, realIdentity, isAdmin, sameOrigin } from "@/lib/server";
 
 export async function GET() {
-  const user = await identity();
+  const user = await realIdentity();
   if (!user || !isAdmin(user.email)) return apiError("Zabranjen pristup.", 403);
   try {
     const rows = await db().prepare("SELECT * FROM companies ORDER BY created_at DESC").all();
@@ -14,7 +14,7 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   if (!sameOrigin(request)) return apiError("Nevažeći zahtjev.", 403);
-  const user = await identity();
+  const user = await realIdentity();
   if (!user || !isAdmin(user.email)) return apiError("Zabranjen pristup.", 403);
   try {
     const data = await request.json() as Record<string, unknown>;

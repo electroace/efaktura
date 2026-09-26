@@ -1,16 +1,15 @@
 import { redirect } from "next/navigation";
-import { requireAppUser } from "@/lib/app-auth";
-import { companyFor, currentMonth, db, paidActive, type Customer, type CatalogItem } from "@/lib/server";
+import { companyFor, currentMonth, db, paidActive, requireWorkspaceUser, type Customer, type CatalogItem } from "@/lib/server";
 import { Editor } from "../ui/editor";
 import { AppHeader } from "../ui/app-header";
 
 export const dynamic = "force-dynamic";
 export default async function NewPage() {
-  const user = await requireAppUser("/novi");
+  const user = await requireWorkspaceUser("/novi");
   const company = await companyFor(user.userId);
   if (company?.status !== "approved") redirect("/");
   const [usage,customers,items] = await Promise.all([
-    db().prepare("SELECT COUNT(*) AS count FROM documents WHERE user_id=? AND month=? AND type='invoice'").bind(user.userId,currentMonth()).first<{count:number}>(),
+    db().prepare("SELECT COUNT(*) AS count FROM documents WHERE user_id=? AND month=?").bind(user.userId,currentMonth()).first<{count:number}>(),
     db().prepare("SELECT * FROM customers WHERE user_id=? ORDER BY name COLLATE NOCASE LIMIT 1000").bind(user.userId).all<Customer>(),
     db().prepare("SELECT * FROM catalog_items WHERE user_id=? ORDER BY name COLLATE NOCASE LIMIT 1000").bind(user.userId).all<CatalogItem>(),
   ]);

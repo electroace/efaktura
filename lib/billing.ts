@@ -13,12 +13,14 @@ export type PlanRequest = {
 };
 
 export const defaultBillingSettings: BillingSettings = {
-  name: "BRATTS d.o.o.", address: "", city: "", postal_code: "", jib: "",
+  name: "BRATTS d.o.o. Sarajevo", address: "", city: "", postal_code: "", jib: "",
   vat_id: "", iban: "", bank: "", email: "electroace@gmail.com",
 };
 
 export async function billingSettings() {
-  const row = await db().prepare("SELECT * FROM billing_settings WHERE id=1").first<BillingSettings>();
+  const row = await db().prepare(`SELECT name,address,city,postal_code,jib,vat_id,iban,bank,
+    contact_email AS email FROM companies WHERE lower(email)=? LIMIT 1`)
+    .bind("electroace@gmail.com").first<BillingSettings>();
   return row ?? defaultBillingSettings;
 }
 
